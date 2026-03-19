@@ -1,6 +1,6 @@
 
-import { SwarmManager } from './lib/agents/SwarmManager';
-import { useCampaignStore } from './lib/store/useCampaignStore';
+import { SwarmManager } from './src/lib/agents/SwarmManager';
+import { useCampaignStore } from './src/lib/store/useCampaignStore';
 
 async function testSwarm() {
   console.log('Starting MCP Test...');
