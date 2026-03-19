@@ -1,1 +1,1 @@
-export { ai as default } from './lib/genkit';
+export { ai as default } from './src/lib/genkit';
