@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion, Variants } from 'framer-motion';
 import { ArrowRight, ChevronDown, Paintbrush, PenTool, Dna, Zap } from 'lucide-react';
+import { SchedulingPulse } from './SchedulingPulse';
 
 const FADE_UP: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -42,6 +43,9 @@ export function Hero() {
     <section id="micro-tools" className="pt-40 pb-20 bg-blue-600 relative overflow-hidden min-h-[90vh] flex flex-col justify-center">
       <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-blue-500 rounded-full blur-[120px] mix-blend-screen opacity-50 pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-700/50 rounded-full blur-[100px] pointer-events-none" />
+
+      {/* Background Scheduling Animation */}
+      <SchedulingPulse />
 
       <motion.div
         className="w-full relative z-10 text-center flex flex-col items-center"
