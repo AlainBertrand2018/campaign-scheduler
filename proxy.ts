@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
  * Next.js 16 Proxy (formerly Middleware) logic.
  * Handles network boundary tasks like redirects, rewrites, and header modifications.
  */
-export function proxy(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Basic diagnostic logging
