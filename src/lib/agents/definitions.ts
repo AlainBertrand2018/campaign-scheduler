@@ -1,6 +1,18 @@
 import { z } from 'zod';
 
 /**
+ * 0. Enola Strategic Directive
+ */
+export const EnolaDirectiveSchema = z.object({
+  meta_strategy: z.string().describe("High-level advertising strategy approach"),
+  emotional_hook: z.string(),
+  visual_dna_directive: z.string(),
+  amendments: z.array(z.string()).optional(),
+});
+
+export type EnolaDirective = z.infer<typeof EnolaDirectiveSchema>;
+
+/**
  * 1. Brand & Identity Schema
  */
 export const BrandIdentitySchema = z.object({
@@ -140,3 +152,18 @@ export const PublishedPostSchema = z.object({
 });
 
 export type PublishedPost = z.infer<typeof PublishedPostSchema>;
+/**
+ * 11. Enola Final Review
+ */
+export const EnolaReviewReportSchema = z.object({
+  overall_score: z.number().min(0).max(10),
+  discrepancies: z.array(z.object({
+    agent: z.string(),
+    issue: z.string(),
+    required_fix: z.string(),
+  })),
+  approved_for_user_submission: z.boolean(),
+  directors_notes: z.string(),
+});
+
+export type EnolaReviewReport = z.infer<typeof EnolaReviewReportSchema>;

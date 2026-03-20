@@ -1,4 +1,5 @@
 import { brandDNAAgentFlow, productDNAAgentFlow } from './DNAAgents';
+import { enolaSynthesisFlow, enolaReviewFlow } from './EnolaAgent';
 import { campaignStrategistFlow } from './CampaignStrategistAgent';
 import { audiencePersonaFlow, copyAgentFlow, visualDirectionAgentFlow } from './CreativeAgents';
 import { creativeQAWorkflow, channelAdaptationFlow } from './OperationalAgents';
@@ -8,13 +9,13 @@ import { CreativeVariant } from './definitions';
 
 /**
  * Swarm Manager: The High-Level Orchestration Layer
- * Manages the sequential and parallel handshakes between all 11 agents.
+ * Manages the sequential and parallel handshakes between all 12 agents.
  * 
  * NOTE: For Genkit 1.26.0, flows are called directly as functions.
  */
 export class SwarmManager {
   /**
-   * Phase 1: Identity & Strategy Synthesis
+   * Phase 1: Identity & Strategy Synthesis (Enola-Led)
    */
   static async synthesizeStrategy(input: {
     url?: string;
@@ -23,7 +24,7 @@ export class SwarmManager {
     objective: string;
     duration: string;
   }) {
-    console.log('[SWARM] Phase 1: Synthesizing Strategy...');
+    console.log('[SWARM] Phase 1: Synthesizing Strategy with Enola...');
     const { addLog } = useCampaignStore.getState();
     addLog({ agent: 'System', message: 'Initiating Phase 1: Identity Synthesis', type: 'info' });
 
@@ -41,7 +42,16 @@ export class SwarmManager {
     });
     addLog({ agent: 'Product DNA', message: 'Product DNA synthesized successfully.', type: 'success' });
 
-    // 2. Trigger Campaign Strategist
+    // 2. Enola: Agency Director Gate 1 - Strategic Directive
+    addLog({ agent: 'Enola', message: 'Directing strategy based on DNA extraction...', type: 'agent' });
+    const directive = await enolaSynthesisFlow({
+      brand_dna: brandDNA,
+      product_dna: productDNA,
+      user_objectives: input.objective,
+    });
+    addLog({ agent: 'Enola', message: `Directive Set: "${directive.meta_strategy}"`, type: 'success' });
+
+    // 3. Trigger Campaign Strategist (Now guided by Enola)
     addLog({ agent: 'Strategist', message: 'Building campaign blueprint...', type: 'agent' });
     const blueprint = await campaignStrategistFlow({
       campaign_id: `CPN-${Date.now()}`,
@@ -49,18 +59,21 @@ export class SwarmManager {
       duration: input.duration,
       brand_dna: brandDNA,
       product_dna: productDNA,
+      enola_directive: directive, // Passage of high-level directive
     });
     addLog({ agent: 'Strategist', message: `Blueprint ready: "${blueprint.meta_strategy}"`, type: 'success' });
 
-    return { brandDNA, productDNA, blueprint };
+    return { brandDNA, productDNA, blueprint, directive };
   }
 
   /**
-   * Phase 2: Creative Swarm Orchestration
+   * Phase 2: Creative Swarm Orchestration (Enola-Audit)
    */
   static async generateCreativeSwarm(input: {
     blueprint: any;
     brandDNA: any;
+    productDNA: any;
+    directive: any;
   }) {
     console.log('[SWARM] Phase 2: Orchestrating Creative Swarm...');
     const { addLog } = useCampaignStore.getState();
@@ -77,29 +90,24 @@ export class SwarmManager {
     // 2. Parallelize Creative Generation per Persona
     addLog({ agent: 'System', message: 'Spawning parallel Copy & Visual agents...', type: 'info' });
     
-    // We'll map through each Persona
     const creativePromises = personas.map(async (persona) => {
       addLog({ agent: 'Copy Agent', message: `Writing native copy variants for "${persona.name}"...`, type: 'agent' });
       
-      // Step A: Generate Copy Variants
       const copyVariants = await copyAgentFlow({
         brand_dna: input.brandDNA,
         persona: persona,
         strategy: input.blueprint,
       });
 
-      // Step B: Spawn Visual Direction & QA pipelines per Copy Variant
       const variantPipelines = copyVariants.map(async (copyVariant) => {
         addLog({ agent: 'Visual Direction', message: `Crafting visual prompts for variant "${copyVariant.copy_variant_name}"...`, type: 'agent' });
         
-        // Step B1: Visual Prompts
         const visualDir = await visualDirectionAgentFlow({
           brand_dna: input.brandDNA,
           copy_variant: copyVariant,
           persona: persona,
         });
 
-        // Step B2: Stitch the unified output together
         const rawCreative = {
           id: `creative-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           persona_id: persona.id,
@@ -107,34 +115,49 @@ export class SwarmManager {
           visual_direction: visualDir,
         };
 
-        // Step B3: Immediate QA Intervention
-        addLog({ agent: 'Creative QA', message: `Reviewing unified creative bundle for ${copyVariant.copy_variant_name}...`, type: 'agent' });
+        addLog({ agent: 'Creative QA', message: `Quick validation of creative bundle for ${copyVariant.copy_variant_name}...`, type: 'agent' });
         const verifiedCreative = await creativeQAWorkflow({
           original_brand: input.brandDNA,
           creative_output: rawCreative as any,
         });
         
-        addLog({ agent: 'Creative QA', message: `QA Passed! Health score: ${verifiedCreative.qa_feedback?.score}%`, type: 'success' });
-
         return {
           ...verifiedCreative,
-          persona_name: persona.name, // Append for UI ease later
+          persona_name: persona.name, 
         } as CreativeVariant & { persona_name: string };
       });
 
-      // Await all variant pipelines for this specific persona
       return Promise.all(variantPipelines);
     });
 
-    // Wait for ALL personas and flatten the variant arrays into a single creatives list
     const finalCreativesArrayOfArrays = await Promise.all(creativePromises);
     const flattenedCreatives = finalCreativesArrayOfArrays.flat();
+
+    // 3. Enola: Agency Director Gate 2 - Final Creative Audit
+    addLog({ agent: 'Enola', message: 'Conducting final Director audit of all swarm output...', type: 'agent' });
+    const reviewReport = await enolaReviewFlow({
+      original_dna: {
+        brand: input.brandDNA,
+        product: input.productDNA,
+      },
+      directive: input.directive,
+      creative_variants: flattenedCreatives,
+    });
+
+    if (reviewReport.approved_for_user_submission) {
+      addLog({ agent: 'Enola', message: `Campaign Approved! Score: ${reviewReport.overall_score}/10. Submitting for User Review.`, type: 'success' });
+    } else {
+      addLog({ agent: 'Enola', message: `Review Failed: ${reviewReport.directors_notes}`, type: 'warning' });
+      // In a production loop, we might re-trigger Phase 2 here. 
+      // For now, we allow the UI to handle the next step with the report info.
+    }
 
     addLog({ agent: 'System', message: `Phase 2 Complete! Swarm produced ${flattenedCreatives.length} production-ready variants.`, type: 'success' });
 
     return {
       personas,
       creatives: flattenedCreatives,
+      reviewReport,
     };
   }
 

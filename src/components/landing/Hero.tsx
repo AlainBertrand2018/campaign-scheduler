@@ -17,8 +17,8 @@ const STAGGER: Variants = {
 
 export const MICRO_TOOLS = [
   {
-    icon: Paintbrush,
-    title: 'Create Visuals',
+    icon: Dna,
+    title: 'Extract Brand DNA',
     price: '$1.99'
   },
   {
@@ -27,8 +27,8 @@ export const MICRO_TOOLS = [
     price: '$1.99'
   },
   {
-    icon: Dna,
-    title: 'Extract Brand DNA',
+    icon: Paintbrush,
+    title: 'Create Visuals',
     price: '$1.99'
   },
   {

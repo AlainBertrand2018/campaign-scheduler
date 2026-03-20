@@ -14,6 +14,7 @@ export const campaignStrategistFlow = ai.defineFlow(
       duration: z.string(),
       brand_dna: z.any(), 
       product_dna: z.any(), 
+      enola_directive: z.any().optional(), // Enola's High-Level Strategy
     }),
     outputSchema: CampaignBlueprintSchema,
   },
@@ -21,7 +22,12 @@ export const campaignStrategistFlow = ai.defineFlow(
     const response = await ai.generate({
       model: STRATEGIST_MODEL,
       prompt: `
-        You are the **Campaign Strategist Agent**.
+        You are the **Campaign Strategist Agent**. 
+        You work under the direction of **Enola**, the Agency Director.
+        
+        DIRECTIVE FROM ENOLA:
+        ${input.enola_directive ? JSON.stringify(input.enola_directive) : "No specific directive. Use standard best practices."}
+        
         CAMPAIGN OBJECTIVES: "${input.objectives}"
         DURATION: "${input.duration}"
         BRAND DNA: ${JSON.stringify(input.brand_dna)}
@@ -29,6 +35,7 @@ export const campaignStrategistFlow = ai.defineFlow(
         
         TASK:
         Generate a "Campaign Blueprint" JSON. 
+        YOU MUST ALIGN YOUR STRATEGY WITH ENOLA'S DIRECTIVE. 
         Identify Meta-Strategy, Personas (1-3), and tasks for: 
         Audience Persona, Copy, Visual Direction (Nano Banana Pro/VEO 3), Audio, QA, Adaptation, and Scheduler agents.
       `,

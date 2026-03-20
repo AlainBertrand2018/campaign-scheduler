@@ -4,25 +4,35 @@ This document defines the specialized autonomous agents that power the Gravity.a
 
 ---
 
-## 🏛️ Strategic Layer (The Brain)
+## 🏛️ Strategic Layer (The Brain & Director)
 
-### 1. Brand DNA Agent
+### 1. Enola — Agency Director (The Orchestrator)
+*   **Role**: A world-class Advertising Agency Manager. She has the "Final Say."
+*   **Tools/Skills**: `StrategicSynthesis`, `DirectorAudit`, `AmendmentLogic`.
+*   **Main Task**: 
+    1.  **Gate 1**: Analyzes raw DNA returns (Brand/Product) and submits a **Strategic Directive** to the Strategist.
+    2.  **Gate 2**: Conducts a final review of all creative outputs before user submission.
+*   **Knowledge Base**: `ENOLA_PLAYBOOK.md`.
+
+### 2. Brand DNA Agent
 *   **Role**: Extracts the "Soul" of the brand from raw data.
 *   **Tools/Skills**: `WebScraperTool` (Puppeteer), `DocumentParser` (PDF/Docx), `ToneAnalyzer` (NLP), `VectorIngestor`.
 *   **Input**: URLs, brand guidelines, manifesto notes, logo/visual assets.
 *   **Output**: Structured **Brand Identity Map** (voice specs, visual style guide, core values).
 
-### 2. Product DNA Agent
+### 3. Product DNA Agent
 *   **Role**: Maps product features to user benefits and "Killer Claims."
 *   **Tools/Skills**: `Featureextractor` (Vision-LLM), `BenefitMapper`, `CompetitiveDifferentiator`.
 *   **Input**: Product shots, feature lists, landing pages, raw product demos.
 *   **Output**: **Product DNA Map** (value proposition, primary claims, technical specs).
 
-### 3. Campaign Strategist Agent
-*   **Role**: The "Project Manager" of the swarm. Orchestrates all other agents.
-*   **Tools/Skills**: `OrchestrationLogic`, `DAGBuilder` (Directed Acyclic Graph), `ConstraintValidator`.
-*   **Input**: User Objectives + Brand DNA + Product DNA.
-*   **Output**: **Campaign Blueprint** (task list for other agents with priority and parallel paths).
+### 4. Campaign Strategist Agent
+*   **Role**: The "Project Manager" of the swarm. Plans the DAG based on Enola's directive.
+*   **Tools/Skills**: `OrchestrationLogic`, `DAGBuilder`, `ConstraintValidator`.
+*   **Input**: User Objectives + Enola's Strategic Directive + DNA Maps.
+*   **Output**: **Campaign Blueprint** (task list for other agents).
+
+---
 
 ---
 
