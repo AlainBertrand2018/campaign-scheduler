@@ -316,7 +316,10 @@ async def extract_dna_endpoint(request: Request):
     if request.method == "OPTIONS":
         return JSONResponse(status_code=200, content="OK", headers=cors_headers)
         
-    # Parse incoming payload
+    # Build dynamic base URL (Render will be https://..., local will be http://localhost:...)
+    protocol = "https" if "render.com" in str(request.base_url) else "http"
+    base_url = f"{protocol}://{request.headers.get('host')}"
+    
     data = await request.json()
     
     # 1. Engage KYC Chain
@@ -331,8 +334,8 @@ async def extract_dna_endpoint(request: Request):
     return JSONResponse({
         "status": "success",
         "data": dna_dict,
-        "preview_pdf_url": f"http://localhost:8000/exports/{p_name}",
-        "master_pdf_url": f"http://localhost:8000/exports/{m_name}"
+        "preview_pdf_url": f"{base_url}/exports/{p_name}",
+        "master_pdf_url": f"{base_url}/exports/{m_name}"
     }, headers=cors_headers)
 
 
