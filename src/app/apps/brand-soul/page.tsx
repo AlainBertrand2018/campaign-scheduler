@@ -477,7 +477,7 @@ export default function BrandDNAApp() {
                   <div className="w-16 h-16 mx-auto rounded-xl bg-gradient-to-br from-indigo-600/20 to-violet-600/20 border border-indigo-500/20 flex items-center justify-center">
                     <Dna className="w-8 h-8 text-indigo-500/60" />
                   </div>
-                  <h3 className="text-2xl font-extrabold text-white uppercase tracking-tight">Agent 01 Standing By</h3>
+                  <h3 className="text-2xl font-extrabold text-white uppercase tracking-tight">KYC Manager Standing By</h3>
                   <p className="text-sm text-slate-500 leading-relaxed">
                     Complete the data intake on the left. The Brand DNA Extractor will process your signals and generate a verified Brand DNA Manifest.
                   </p>
