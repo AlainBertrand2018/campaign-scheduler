@@ -24,7 +24,8 @@ export const MICRO_TOOLS = [
     icon: Dna,
     title: 'Extract Brand DNA',
     price: '$1.99',
-    href: '#'
+    href: '/apps/brand-soul',
+    target: '_blank'
   },
   {
     icon: PenTool,
@@ -78,12 +79,16 @@ export function Hero() {
 
         <motion.div variants={FADE_UP} className="w-full max-w-[1400px] mx-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-4">
           <div className="flex flex-nowrap items-center justify-start lg:justify-center gap-6 py-12 min-w-max">
-            {MICRO_TOOLS.map((tool) => (
-              <Link
-                key={tool.title}
-                href={tool.href}
-                className="group relative flex items-center gap-3.5 bg-white/5 backdrop-blur-md hover:bg-white text-white hover:text-slate-900 border border-white/20 hover:border-white pl-3.5 pr-7 py-4 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2"
-              >
+            {MICRO_TOOLS.map((tool) => {
+              const ToolLink = tool.target === '_blank' ? 'a' : Link;
+              return (
+                <ToolLink
+                  key={tool.title}
+                  href={tool.href}
+                  target={tool.target}
+                  rel={tool.target === '_blank' ? "noopener noreferrer" : undefined}
+                  className="group relative flex items-center gap-3.5 bg-white/5 backdrop-blur-md hover:bg-white text-white hover:text-slate-900 border border-white/20 hover:border-white pl-3.5 pr-7 py-4 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2"
+                >
                 <div className="w-11 h-11 shrink-0 bg-white/20 group-hover:bg-blue-50 rounded-full flex items-center justify-center transition-colors">
                   <tool.icon size={20} className="text-white group-hover:text-blue-600 transition-colors" />
                 </div>
@@ -96,8 +101,9 @@ export function Hero() {
                 <div className="absolute right-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-600">
                   <ArrowRight size={18} />
                 </div>
-              </Link>
-            ))}
+                </ToolLink>
+              );
+            })}
           </div>
         </motion.div>
 
