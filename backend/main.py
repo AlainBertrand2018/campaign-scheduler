@@ -22,6 +22,7 @@ load_dotenv()
 
 # 1. Initialize Federated Agents App
 mcp = FastMCP("ENOLA_AI_SWARM", host="0.0.0.0", port=8000)
+app = mcp.app
 
 # -- ENOLA DIRECTOR TOOLS --
 
