@@ -1,8 +1,8 @@
 'use server';
 
 import { ai } from '@/lib/genkit';
-import { kycManagerFlow } from '@/lib/agents/kyc/manager';
-import { productManagerFlow } from '@/lib/agents/product/manager';
+import { brandDNAFlow } from '@/lib/agents/kyc/manager';
+import { productDNAFlow } from '@/lib/agents/product/manager';
 
 /**
  * INITIAL SYNTHESIS ACTION
@@ -14,21 +14,13 @@ export async function runInitialSynthesisAction(formData: any) {
         console.log("🚀 TRIGGERING SWARM GATE 1: Initial Synthesis...");
         
         // 1. Convert form data/input to a structured brief
-        const brandName = formData.brandName;
-        const target = formData.targetAudience;
-        const voice = formData.brandVoice;
+        const kycInput = `Brand: ${formData.brandName}\nTarget: ${formData.targetAudience}\nVoice: ${formData.brandVoice}\nManifesto: ${formData.brandManifesto || ''}`;
+        const productInput = `Product Specs: ${formData.productSpecs || "Standard SaaS"}`;
         
         // 2. Run KYC and Product Managers in parallel for speed
         const [brandDNA, productDNA] = await Promise.all([
-            kycManagerFlow({ 
-                brandName, 
-                targetAudience: target, 
-                brandVoice: voice 
-            }),
-            productManagerFlow({ 
-                brandName, 
-                productSpecs: formData.productSpecs || "Standard SaaS" 
-            })
+            brandDNAFlow({ rawInput: kycInput }),
+            productDNAFlow({ rawInput: productInput })
         ]);
 
         return {
