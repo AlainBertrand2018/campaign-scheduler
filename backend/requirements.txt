@@ -1,7 +1,7 @@
 mcp[fastapi,server]
 pydantic
 langchain
-langchain-core
+langchain-community
 langchain-google-genai
 python-dotenv
 fastapi
