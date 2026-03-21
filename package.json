@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
+    "dev:python": "cd backend && python main.py",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -17,6 +18,8 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "framer-motion": "^12.38.0",
     "genkit": "^1.30.1",
+    "genkit-cli": "^1.30.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.577.0",
     "next": "16.2.0",
     "react": "19.2.4",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jszip": "^3.4.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

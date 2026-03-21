@@ -15,26 +15,34 @@ const STAGGER: Variants = {
   show: { opacity: 1, transition: { staggerChildren: 0.1 } }
 };
 
+const BananaIcon = ({ size = 20, className = "" }) => (
+  <span style={{ fontSize: `${size}px` }} className={className}>🍌</span>
+);
+
 export const MICRO_TOOLS = [
   {
     icon: Dna,
     title: 'Extract Brand DNA',
-    price: '$1.99'
+    price: '$1.99',
+    href: '#'
   },
   {
     icon: PenTool,
     title: 'Write Commercial Copy',
-    price: '$1.99'
+    price: '$1.99',
+    href: '#'
   },
   {
     icon: Paintbrush,
-    title: 'Create Visuals',
-    price: '$1.99'
+    title: 'Create Visual Brief',
+    price: '$1.99',
+    href: '#'
   },
   {
-    icon: Zap,
-    title: 'Repurpose Content',
-    price: '$1.99'
+    icon: BananaIcon as any,
+    title: 'Generate Ad Visuals',
+    price: '$1.99',
+    href: '#'
   }
 ];
 
@@ -73,7 +81,7 @@ export function Hero() {
             {MICRO_TOOLS.map((tool) => (
               <Link
                 key={tool.title}
-                href="/os/micro"
+                href={tool.href}
                 className="group relative flex items-center gap-3.5 bg-white/5 backdrop-blur-md hover:bg-white text-white hover:text-slate-900 border border-white/20 hover:border-white pl-3.5 pr-7 py-4 rounded-full transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-2"
               >
                 <div className="w-11 h-11 shrink-0 bg-white/20 group-hover:bg-blue-50 rounded-full flex items-center justify-center transition-colors">

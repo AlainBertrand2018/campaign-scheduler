@@ -1,0 +1,38 @@
+/* Swarm Lab — Global Aesthetics */
+:root {
+  --enola-midnight: #0a0a0c;
+  --enola-glass: rgba(255, 255, 255, 0.03);
+  --enola-border: rgba(255, 255, 255, 0.08);
+  --enola-accent: #6366f1; /* Neon Indigo */
+  --enola-success: #10b981;
+  --enola-warning: #f59e0b;
+}
+
+.swarm-card {
+  background: var(--enola-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--enola-border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.swarm-card:hover {
+  border-color: var(--enola-accent);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.brand-label {
+  font-family: 'Outfit', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--enola-accent);
+}
+
+.data-node {
+  border-left: 2px solid var(--enola-border);
+  padding-left: 16px;
+  margin-top: 12px;
+}

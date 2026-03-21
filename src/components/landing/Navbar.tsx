@@ -19,9 +19,9 @@ export function Navbar({ scrolled }: NavbarProps) {
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-white rounded flex items-center justify-center font-bold text-blue-600 text-lg shadow-sm">
-            G
+            E
           </div>
-          <span className="font-bold text-xl tracking-tight text-white">Gravity.ai</span>
+          <span className="font-bold text-xl tracking-tight text-white uppercase">ENOLA.AI</span>
         </Link>
 
         {/* Desktop Nav */}

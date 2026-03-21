@@ -11,10 +11,7 @@ import { Footer } from '@/components/landing/Footer';
 
 /**
  * LANDING PAGE - GRAVITY AI
- * Refactored for best practices:
- * 1. Atomic components in @/components/landing
- * 2. Optimized state for scrolling
- * 3. Consistent design system utility usage
+ * CLEAN SLATE MODE: Starting point for Microtool Rebuild
  */
 export default function Page() {
   const [scrolled, setScrolled] = useState(false);

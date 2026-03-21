@@ -1,60 +1,43 @@
 'use server';
 
-import { SwarmManager } from '@/lib/agents/SwarmManager';
+import { ai } from '@/lib/genkit';
+import { kycManagerFlow } from '@/lib/agents/kyc/manager';
+import { productManagerFlow } from '@/lib/agents/product/manager';
 
 /**
- * Server Action to trigger DNA & Strategy Synthesis
+ * INITIAL SYNTHESIS ACTION
+ * This is the first gate (Gate 1) of the Enola Swarm.
+ * It runs Agent 1 (KYC) and Agent 2 (Product) in parallel.
  */
-export async function runInitialSynthesisAction(input: {
-  url?: string;
-  brand_notes?: string;
-  product_desc: string;
-  objective: string;
-  duration: string;
-}) {
-  console.log('[DEBUG] API Key Check:', {
-    has_gemini: !!process.env.GEMINI_API_KEY,
-    has_google: !!process.env.GOOGLE_API_KEY,
-  });
-  try {
-    const results = await SwarmManager.synthesizeStrategy(input);
-    return { success: true, results };
-  } catch (error: any) {
-    console.error('[SERVER ACTION ERROR]', error);
-    return { success: false, error: error.message };
-  }
-}
+export async function runInitialSynthesisAction(formData: any) {
+    try {
+        console.log("🚀 TRIGGERING SWARM GATE 1: Initial Synthesis...");
+        
+        // 1. Convert form data/input to a structured brief
+        const brandName = formData.brandName;
+        const target = formData.targetAudience;
+        const voice = formData.brandVoice;
+        
+        // 2. Run KYC and Product Managers in parallel for speed
+        const [brandDNA, productDNA] = await Promise.all([
+            kycManagerFlow({ 
+                brandName, 
+                targetAudience: target, 
+                brandVoice: voice 
+            }),
+            productManagerFlow({ 
+                brandName, 
+                productSpecs: formData.productSpecs || "Standard SaaS" 
+            })
+        ]);
 
-/**
- * Server Action to trigger Creative Swarm
- */
-export async function runCreativeSwarmAction(input: {
-  blueprint: any;
-  brandDNA: any;
-}) {
-  try {
-    const results = await SwarmManager.generateCreativeSwarm(input);
-    return { success: true, results };
-  } catch (error: any) {
-    console.error('[SERVER ACTION ERROR]', error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Server Action to trigger Phase 3: Execution Swarm
- */
-export async function runExecutionSwarmAction(input: {
-  creatives: any[];
-  platforms: string[];
-  campaign_duration_days: number;
-  timezone: string;
-}) {
-  try {
-    const results = await SwarmManager.executeCampaignSwarm(input);
-    return { success: true, results };
-  } catch (error: any) {
-    console.error('[SERVER ACTION ERROR]', error);
-    return { success: false, error: error.message };
-  }
+        return {
+            success: true,
+            brandDNA,
+            productDNA
+        };
+    } catch (error: any) {
+        console.error("🚨 SWARM GATE 1 FAILED:", error);
+        return { success: false, error: error.message };
+    }
 }
