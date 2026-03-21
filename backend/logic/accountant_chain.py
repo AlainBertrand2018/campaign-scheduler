@@ -2,7 +2,7 @@ import os
 import json
 from typing import Dict, Any, List
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from models.finance import FinanceInput, FinanceReport
 from dotenv import load_dotenv
 

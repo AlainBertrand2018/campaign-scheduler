@@ -3,7 +3,7 @@ import json
 import asyncio
 from typing import Dict, Any, List
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from models.nanobanana import BananaInput, BananaOutput, VisualVariant
 from dotenv import load_dotenv
 
