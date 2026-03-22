@@ -1,183 +1,167 @@
 import os
+import json
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from models.kyc import MasterBrandDNA, BrandFoundation
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from models.kyc import MasterBrandDNA, BrandFoundation, VisualSystem, VoiceProfile, MarketPositioning
 from utilities.web_scraper import deep_scan_url
-
 
 # Load environment variables
 load_dotenv()
 
+# Internal Sub-Agent Models
+class VisualAuditResult(BaseModel):
+    primary_colors: List[dict] = Field(..., description="List of {hex: str, psychology: str, analysis: str}")
+    fonts: List[str] = Field(..., description="List of identified font families")
+    imagery_style: str = Field(..., description="Description of photography/imagery style")
+    logo_style: str = Field(..., description="Logo layout and style classification")
+
 class KYCChain:
     """
     The reasoning logic for the KYC Manager (Brand DNA Manager).
-    Processes raw brand signals into a structured MasterBrandDNA object.
-    Now supports multimodal vision context for deeper aesthetic analysis.
+    Orchestrates a multi-pass pipeline of sub-agents:
+    1. Browser Sub-Agent (Playwright)
+    2. Visual Sub-Agent (Vision LLM)
+    3. Strategic Sub-Agent (Reasoning LLM)
     """
     def __init__(self):
-        # Using Gemini 2.0 Flash for massive structured extraction tasks
+        # Gemini 2.0 Flash for all reasoning passes
         self.model = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
-            temperature=0.2
+            temperature=0.0,
+            max_retries=3
         )
+
+    async def _run_visual_audit(self, screenshot_b64: str, logo_base64: str = None) -> dict:
+        """
+        Sub-Agent: Visual Auditor.
+        Analyzes screenshots and logos to extract high-fidelity aesthetic data.
+        """
+        system_msg = SystemMessage(content="""
+        You are the 'Aesthetic Auditor' for Enola.ai.
+        Your job is to look at the brand visuals (website screenshot and/or logo) and extract technical aesthetic data.
+        
+        CRITICAL: Provide actual HEX codes, identifying font family names, and a critical analysis of the 'Vibe'.
+        Return ONLY valid JSON with keys: 
+        'primary_colors' (list of {hex, psychology, analysis}), 
+        'fonts' (list of strings), 
+        'imagery_style' (str), 
+        'logo_style' (str).
+        """)
+        
+        content_parts = [{"type": "text", "text": "Analyze these brand visuals and provide a technical visual audit."}]
+        if screenshot_b64:
+            content_parts.append({"type": "image_url", "image_url": {"url": screenshot_b64}})
+        if logo_base64:
+            content_parts.append({"type": "image_url", "image_url": {"url": logo_base64}})
+            
+        human_msg = HumanMessage(content=content_parts)
+        
+        try:
+            # Use structured output for the visual auditor
+            llm_with_structure = self.model.with_structured_output(VisualAuditResult)
+            response = await llm_with_structure.ainvoke([system_msg, human_msg])
+            return response.dict() if response else {}
+        except Exception as e:
+            print(f"Visual Audit Sub-Agent Failed: {e}")
+            return {}
 
     async def extract_brand_dna(self, input_data: dict) -> MasterBrandDNA:
         """
-        Ingests dictionary of signals and outputs a validated MasterBrandDNA object.
+        Main Orchestrator for the KYC Manager Pipeline.
         """
-        # Load the KYC Playbook for context
+        brand_name = input_data.get('name', 'Unknown Brand')
+        website = input_data.get('website', '')
+        logo_b64 = input_data.get('imageBase64', None)
+        
+        # 1. BROWSER SUB-AGENT: Signal Extraction
+        scraping_result = {}
+        if website and website.strip() and website.lower() != 'not provided':
+            scraping_result = await deep_scan_url(website, max_images=3)
+        
+        screenshot_b64 = None
+        if "images" in scraping_result and len(scraping_result["images"]) > 0:
+            screenshot_b64 = scraping_result["images"][0].get("base64")
+
+        # 2. VISUAL SUB-AGENT: Multimodal Aesthetic Audit
+        visual_audit = await self._run_visual_audit(screenshot_b64, logo_b64)
+
+        # 3. STRATEGIC SUB-AGENT: Synthesis & Mapping
+        # Load Playbook
         playbook_path = os.path.join(os.getcwd(), "KYC_MANAGER_PLAYBOOK.md")
         playbook_content = ""
         if os.path.exists(playbook_path):
             with open(playbook_path, "r", encoding="utf-8") as f:
-                playbook_content = f.read()
+                playbook_content = f.read()[:5000]
 
-        # Build prompt messages dynamically
-        system_msg = SystemMessage(content=f"""
-You are Enola, the Agency Director and Master Orchestrator. 
-You are performing a highly critical "Strategic Consultation Brief" on a brand. 
-You MUST return highly structured, accurate, and perceptive JSON matching the MasterBrandDNA schema.
+        system_prompt = f"""
+You are Enola, the Agency Director. You are orchestrating the final synthesis of a Brand DNA Manifest.
+You have the outputs from several Specialized Sub-Agents (Browser, Visual Auditor).
 
-IDENTITY GUARDRAIL (CRITICAL):
-1. THE BRAND NAME: Strictly use the 'Brand Name' provided by the user in the "PRIMARY BRAND SOURCE OF TRUTH". 
-2. The brand name IS exactly what the user provided, regardless of what the website URL or scraped data reveals.
-3. If the scraped data reveals a different entity (e.g. if the user provides "AVA The Bureau" but the URL is about "Bias Auditors"), you must treat that scraped entity as a PARTNER, a PARENT COMPANY, or a COMPETITOR, but NOT the subject of this report. The report is exclusively about the User's Brand Name.
-4. DO NOT HALLUCINATE: If the scraped data feels disconnected from the user's manual inputs, ALWAYS prioritize the user's manual inputs (Manifesto, Target Customer, etc.).
+NON-NEGOTIABLE MISSIONS:
+1. TRUTH OVER HALLUCINATION: Priority is User Intake -> Scraped Signals -> Inference.
+2. COMPLETENESS: Every field in the schema MUST be filled with high-value professional content.
+3. NO DEFAULT STRINGS: Never return placeholders from the schema like "Story under reconstruction.", "Analysis pending.", or "Standard behavior.". You MUST overwrite every single field with unique, brand-specific analysis.
+4. ARCHETYPE MAPPING: You MUST assign a primary and secondary archetype (e.g. Hero, Sage, Explorer).
+5. BRAND STORY: Write a compelling 2-3 paragraph brand story based on the Manifesto and Problem Solved.
+6. DEPTH: If a field asks for a list, provide at least 3-5 items. If it asks for a description, provide at least 2 sentences.
 
-CRITICAL ANALYTICAL INSTRUCTIONS:
-1. STOP BEING SYCOPHANTIC. Do not endlessly praise the brand. Give an uncompromising, boardroom-ready, objective analysis. 
-2. For EVERY single new hinting/analysis/guidance field, you MUST provide actionable, professional directives on how to weaponize the data for advertising campaigns.
-3. Your tone must be strictly professional, tech-forward, and decisive.
-4. For Section 9, clearly list the actual marketing frameworks (e.g., Aaker Personality Dimensions, AIDA, SWOT, Value Proposition Canvas) you are utilizing.
-
-PLAYBOOK CONTEXT:
+PLAYBOOK DIRECTIVES:
 {playbook_content}
-""")
-        
-        brand_name = input_data.get('name', 'Not provided')
-        website = input_data.get('website', 'Not provided')
-        industry = input_data.get('industry', 'Not provided')
-        market = input_data.get('market', 'Not provided')
-        language = input_data.get('language', 'Not provided')
-        tagline = input_data.get('tagline', 'Not provided')
-        target_customer = input_data.get('target_customer', 'Not provided')
-        problem_solved = input_data.get('problem_solved', 'Not provided')
-        manifesto = input_data.get('manifesto', 'Not provided')
-        competitors = input_data.get('competitors', [])
-        social_urls = input_data.get('social_urls', [])
-        image_base64 = input_data.get('imageBase64', None)
 
-        # 1. Scrape the website if available
-        scraped_text = "No relevant text extracted from URL."
-        scraped_colors = []
-        scraped_fonts = []
-        scraped_images = []
-        scraping_result = {}
-        
-        if website and website.lower() != 'not provided':
-            try:
-                scraping_result = await deep_scan_url(website, max_images=3)
-                if "error" not in scraping_result:
-                    scraped_text = scraping_result.get("raw_text", scraped_text)
-                    scraped_colors = scraping_result.get("colors", [])
-                    scraped_fonts = scraping_result.get("fonts", [])
-                    scraped_images = scraping_result.get("images", [])
-            except Exception as e:
-                print(f"Scraping failed: {e}")
+VISUAL AUDITOR FEEDBACK (INTEGRATE THIS):
+{json.dumps(visual_audit, indent=2)}
 
-        # Ensure image urls extracted are properly populated
-        explicit_images_urls = [img["url"] for img in scraped_images]
-
-        text_content = f"""
-PRIMARY BRAND SOURCE OF TRUTH (ABSOLUTE PRIORITY):
-Brand Name: {brand_name}
-Industry Sector: {industry}
-Target Market: {market}
-Language: {language}
-Tagline/Slogan: {tagline}
-Target Customer: {target_customer}
-Problem Solved: {problem_solved}
-Manifesto/Core Narrative: {manifesto}
-
-SECONDARY SIGNALS (FOR CONTEXT ONLY):
-Website URL: {website}
-Social URLs: {', '.join(social_urls) if social_urls else 'None'}
-Competitors: {', '.join(competitors) if competitors else 'None'}
-
-        BROWSER AGENT RESULTS (WEBSITE COPY & AESTHETIC SIGNALS):
-        Title: {scraping_result.get("title", 'Not extracted')}
-        Meta Tags (Underlying Semantic Signals):
-        {scraping_result.get("meta_tags", 'Not extracted')}
-        
-        Robot Info (sitemaps if found):
-        {scraping_result.get("robots_txt", 'Not checked/blocked')}
-        
-        Extracted HTML Copy (Header to Footer): 
-        {scraped_text}
-
-Visual CSS Clues:
-Found Colors: {scraped_colors}
-Found Fonts: {scraped_fonts}
-
-TASK: 
-Deep-analyze the brand "{brand_name}" based ON THE PRIMARY BRAND SOURCE OF TRUTH. 
-If the SECONDARY SIGNALS or BROWSER AGENT RESULTS (like the website URL) contain different branding (e.g. they point to a parent company, a platform, or a partner), you MUST STILL focus the entire report exclusively on "{brand_name}". Treat any conflicting scraped data as 'Market Context' or 'Platform Features', but the SUBJECT of your report must strictly be "{brand_name}".
-When filling out VisualSystem, make sure to explicitly include `extracted_app_images: {explicit_images_urls}`, `extracted_app_fonts`: {scraped_fonts}, and `extracted_app_colors`: {scraped_colors}.
-Produce the exhaustive 9-section MasterBrandDNA output.
+SCRAPED TEXT SIGNALS:
+{scraping_result.get('raw_text', 'No signals found.')[:10000]}
 """
-        
-        content_parts = [{"type": "text", "text": text_content}]
-        
-        # If a logo or media was provided, inject it into the multimodal payload
-        if image_base64:
-            if image_base64.startswith("data:") and ";base64," in image_base64:
-                prefix, b64_data = image_base64.split(";base64,")
-                mime_type = prefix.replace("data:", "")
-                
-                if mime_type.startswith("image/"):
-                    content_parts.append({
-                        "type": "image_url",
-                        "image_url": {"url": image_base64}
-                    })
-                else:
-                    # Assume Audio or Video
-                    # Try passing as media dict (supported by some LangChain versions for Google)
-                    content_parts.append({
-                        "type": "media",
-                        "mime_type": mime_type,
-                        "data": b64_data
-                    })
-            else:
-                # Fallback to pure image_url
-                content_parts.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                })
 
-        # Inject up to 3 website images that the Browser Agent retrieved
-        for sc_img in scraped_images[:3]:
-            if sc_img.get("base64"):
-                content_parts.append({
-                    "type": "image_url",
-                    "image_url": {"url": sc_img["base64"]}
-                })
+        user_context = f"""
+USER PROVIDED DATA (THE FOUNDATION):
+Brand Name: {brand_name}
+Industry: {input_data.get('industry', 'N/A')}
+Tagline: {input_data.get('tagline', 'N/A')}
+Manifesto: {input_data.get('manifesto', 'N/A')}
+Target Customer: {input_data.get('target_customer', 'N/A')}
+Problem Solved: {input_data.get('problem_solved', 'N/A')}
+Market: {input_data.get('market', 'Global')}
 
-        human_msg = HumanMessage(content=content_parts)
+TASK: Produce the complete 9-section MasterBrandDNA JSON.
+"""
 
-        # Apply structural enforcement with error handling
         try:
+            # Bind the schema for the final strategic pass
             llm_with_structure = self.model.with_structured_output(MasterBrandDNA)
-            dna_result = await llm_with_structure.ainvoke([system_msg, human_msg])
+            dna_result = await llm_with_structure.ainvoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_context)
+            ])
             
             if dna_result:
+                # Integrity Check: Ensure name and visual assets are correctly mapped
+                dna_result.foundation.brand_name = brand_name
+                
+                # If the Visual Auditor found images or fonts, ensure they are in the 'extracted' lists
+                if "images" in scraping_result:
+                    dna_result.visual.extracted_app_images = [img["url"] for img in scraping_result["images"] if not img.get("base64") or len(img["base64"]) < 100000] # Don't store large b64 in the dna list
+                
+                # Safety: If fonts or colors were missing from the audit, use scraping results
+                if not dna_result.visual.extracted_app_fonts and "fonts" in scraping_result:
+                    dna_result.visual.extracted_app_fonts = scraping_result["fonts"]
+                if not dna_result.visual.extracted_app_colors and "colors" in scraping_result:
+                    dna_result.visual.extracted_app_colors = scraping_result["colors"]
+
                 return dna_result
             
-            print("WARNING: LLM returned None for structured output. Returning default model.")
-            return MasterBrandDNA(foundation=BrandFoundation(brand_name=brand_name))
-            
+            raise ValueError("Strategic Sub-Agent failed to return result.")
+
         except Exception as e:
-            print(f"ERROR: Structured extraction failed: {e}")
-            # Return a model with at least the brand name so the PDF isn't entirely blank
-            return MasterBrandDNA(foundation=BrandFoundation(brand_name=brand_name))
+            print(f"CRITICAL_PIPELINE_FAILURE: {e}")
+            # Minimum Viable Fallback
+            fallback = MasterBrandDNA()
+            fallback.foundation.brand_name = brand_name
+            fallback.foundation.brand_story = input_data.get('manifesto', 'Brand manual recovery initiated.')
+            return fallback

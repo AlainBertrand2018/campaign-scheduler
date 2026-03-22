@@ -24,6 +24,7 @@ import {
   Loader2,
   MapPin
 } from 'lucide-react';
+import DnaDashboard from './components/DnaDashboard';
 
 /* ───────── TYPES ───────── */
 interface BrandDNAInput {
@@ -168,7 +169,7 @@ export default function BrandDNAApp() {
     // 3. Await Backend Completion
     try {
         const responseData = await extractionPromise;
-        if (responseData.status === "success") {
+        if (responseData && responseData.status === "success") {
            setResult(responseData.data);
            setPreviewPdfUrl(responseData.preview_pdf_url);
            setMasterPdfUrl(responseData.master_pdf_url);
@@ -189,14 +190,9 @@ export default function BrandDNAApp() {
 
   /* ── Report Generation ── */
   const handleDownload = () => {
-    // Downloads the Master Brief
+    // Opens the Master Brief in a new tab for instant view and manual save
     if (!masterPdfUrl) return;
-    const link = document.createElement('a');
-    link.href = masterPdfUrl;
-    link.download = masterPdfUrl.split('/').pop() || 'BRAND_DNA_MASTER_BRIEF.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.open(masterPdfUrl, '_blank');
   };
 
   /* ── Shared Input Classes ── */
@@ -530,77 +526,12 @@ export default function BrandDNAApp() {
 
             {phase === 'complete' && result && (
               <motion.div key="complete" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex-1 bg-[#08080c] border border-white/[0.04] rounded-2xl p-8 flex flex-col relative overflow-hidden overflow-y-auto">
-                <div className="absolute inset-0 opacity-[0.015] pointer-events-none"
-                  style={{ backgroundImage: 'radial-gradient(circle, #22c55e 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                    <h3 className="text-lg font-extrabold text-white uppercase tracking-tight">Brand DNA Manifest</h3>
-                  </div>
-                  <button 
-                    onClick={handleDownload}
-                    disabled={isGeneratingReport}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-black text-[10px] font-extrabold uppercase tracking-widest rounded-lg hover:bg-indigo-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGeneratingReport ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating Manifest...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" /> Download PDF
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* PDF PREVIEW FRAME */}
-                {previewPdfUrl && (
-                    <div className="mt-8 relative z-10 w-full rounded-xl overflow-hidden border border-white/[0.04] shadow-2xl">
-                        <div className="bg-[#0f0f13] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
-                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Document 1: Executive Summary (Preview)</span>
-                            <span className="text-[10px] font-mono text-indigo-400">PDF Rendering Environment Status: Active</span>
-                        </div>
-                        <iframe 
-                            src={previewPdfUrl} 
-                            className="w-full h-[700px] bg-[#1a1a24] border-0" 
-                            title="Brand DNA Executive Summary"
-                        />
-                    </div>
-                )}
-                
-                {/* PDF DOWNLOAD FRAME */}
-                {masterPdfUrl && (
-                    <div className="mt-4 w-full flex justify-end">
-                       <button onClick={handleDownload} className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold uppercase tracking-[0.1em] text-[10px] px-6 py-3 rounded-xl hover:from-emerald-500 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/20">
-                          <Download className="w-4 h-4" /> Download In-Depth Master Report (PDF)
-                       </button>
-                    </div>
-                )}
-
-                {/* VISUAL ASSETS DISCOVERED */}
-                {result?.visual?.extracted_app_images && result.visual.extracted_app_images.length > 0 && (
-                    <div className="mt-8 space-y-4 relative z-10 w-full">
-                        <div className="flex items-center gap-3">
-                            <ImagePlus className="w-4 h-4 text-indigo-400" />
-                            <h4 className="text-xs font-extrabold text-white uppercase tracking-widest">Extracted Visual Signatures</h4>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {result.visual.extracted_app_images.map((imgUrl: string, idx: number) => (
-                                <a key={idx} href={imgUrl} target="_blank" rel="noopener noreferrer" className="group block relative aspect-video bg-[#0f0f13] rounded-xl overflow-hidden border border-white/[0.04] hover:border-indigo-500/50 transition-colors">
-                                    {/* Using an img tag to render the remote URL */}
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={imgUrl} alt={`Extracted Brand Asset ${idx+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <p className="text-[9px] font-mono text-white/70 truncate w-full">{imgUrl}</p>
-                                    </div>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                className="flex-1 bg-[#08080c] border border-white/[0.04] rounded-2xl overflow-hidden overflow-y-auto"
+              >
+                <DnaDashboard 
+                  data={result} 
+                  onGenerateReport={handleDownload} 
+                />
               </motion.div>
             )}
           </AnimatePresence>

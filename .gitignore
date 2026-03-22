@@ -67,3 +67,12 @@ wheels/
 .venv/
 venv/
 ENV/
+
+# Local Exports and Assets
+/backend/exports/
+/exports/
+*.pdf
+# Avoid committing layout screenshots by default
+*.webp
+*.png
+!public/*.png

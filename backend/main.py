@@ -26,9 +26,19 @@ load_dotenv()
 app = FastAPI(title="ENOLA_AI_SWARM_SERVICE")
 
 # 2. Add CORS Middleware for Vercel Frontend
+# Allow dynamic frontend URL via ENV for Render/Vercel parity
+allowed_origins = [
+    "https://enola-ai.vercel.app", 
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001"
+]
+if os.environ.get("FRONTEND_URL"):
+    allowed_origins.append(os.environ.get("FRONTEND_URL"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://enola-ai.vercel.app", "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,13 +51,13 @@ async def extract_dna_endpoint(request: Request):
     """
     Standard REST endpoint for the frontend to access the KYC Manager and generate PDFs.
     """
-    # Build dynamic base URL (Render will be https://..., local will be http://localhost:...)
-    protocol = "https" if "render.com" in str(request.base_url) else "http"
-    base_url = f"{protocol}://{request.headers.get('host')}"
-    
-    data = await request.json()
+    # Protocol detection for Proxy (Render/Vercel)
+    proto = request.headers.get("x-forwarded-proto", "http")
+    host = request.headers.get("host")
+    base_url = f"{proto}://{host}"
     
     try:
+        data = await request.json()
         # 1. Engage KYC Chain (Agent 1)
         kyc = KYCChain()
         dna_result = await kyc.extract_brand_dna(data)
@@ -62,7 +72,7 @@ async def extract_dna_endpoint(request: Request):
         dna_dict = dna_result.model_dump()
         
         # 2. Immediately Generate the Agency-Grade PDF Reports
-        p_path, p_name, m_path, m_name = generate_dna_pdf(dna_dict)
+        p_path, p_name, m_path, m_name = await generate_dna_pdf(dna_dict)
         
         # 3. Return the payload to the frontend
         return JSONResponse({
@@ -192,5 +202,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    # Local dev run
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Local and production port handling
+    port = int(os.environ.get("PORT", 8000))
+    print(f"Server starting on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)
