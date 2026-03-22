@@ -171,6 +171,29 @@ class PremiumReportGenerator:
         ]))
         return t
 
+    def _create_list(self, items):
+        if not items:
+            return Paragraph("None identified.", self.styles['BodyTextSmall'])
+        list_data = [[Paragraph(f"• {str(item)}", self.styles['BodyTextSmall'])] for item in items]
+        t = Table(list_data, colWidths=[self.doc.width])
+        t.setStyle(TableStyle([
+            ('LEFTPADDING', (0,0), (-1,-1), 10),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+        ]))
+        return t
+
+    def _create_key_value(self, key, value):
+        data = [
+            [Paragraph(f"<b>{key}</b>", self.styles['BodyTextSmall']), Paragraph(str(value), self.styles['BodyTextSmall'])]
+        ]
+        t = Table(data, colWidths=[1.5*inch, self.doc.width - 1.5*inch])
+        t.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ]))
+        return t
+
     def build(self):
         """Assembles the document flow with precise template switching."""
         story = []
@@ -189,45 +212,173 @@ class PremiumReportGenerator:
         story.append(NextPageTemplate('MainTemplate'))
         story.append(PageBreak())
         
-        # FOUNDATION
+        # --- 1. FOUNDATION ---
         fd = self.data.get('foundation', {})
-        s1 = [
-            Paragraph("1. Brand Foundation", self.styles['SectionHeader']),
-            Paragraph("BRAND STORY", self.styles['LabelIndicated']),
-            Paragraph(fd.get('brand_story', 'Pending.'), self.styles['BodyTextSmall']),
-            Spacer(1, 10),
-            self._create_callout("Foundational Strategy", fd.get('usp_strength_analysis', 'N/A'))
-        ]
-        story.append(KeepTogether(s1))
+        story.append(Paragraph("1. Brand Foundation", self.styles['SectionHeader']))
+        
+        story.append(Paragraph("BRAND STORY & MISSION", self.styles['LabelIndicated']))
+        story.append(Paragraph(str(fd.get('brand_story', '')), self.styles['BodyTextSmall']))
+        story.append(Spacer(1, 10))
+        story.append(self._create_key_value("Mission", fd.get('mission')))
+        story.append(self._create_key_value("Vision", fd.get('vision')))
+        story.append(self._create_key_value("Brand Promise", fd.get('brand_promise')))
+        
+        story.append(Paragraph("CORE VALUES", self.styles['LabelIndicated']))
+        story.append(self._create_list(fd.get('values', [])))
+        
+        story.append(Paragraph("ARCHETYPES & BEHAVIOR", self.styles['LabelIndicated']))
+        story.append(self._create_key_value("Primary", fd.get('primary_archetype')))
+        story.append(self._create_key_value("Secondary", fd.get('secondary_archetype')))
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(str(fd.get('archetype_behavioral_implications', '')), self.styles['BodyTextSmall']))
+        
+        if fd.get('usp_strength_analysis'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Foundational Strategy", fd.get('usp_strength_analysis')))
+            
+        story.append(PageBreak())
+        
+        # --- 2. VISUAL IDENTITY ---
+        vi = self.data.get('visual', {})
+        story.append(Paragraph("2. Visual Identity System", self.styles['SectionHeader']))
+        
+        story.append(Paragraph("TYPOGRAPHY & IMAGERY", self.styles['LabelIndicated']))
+        story.append(self._create_key_value("Primary Font", vi.get('primary_typography')))
+        story.append(self._create_key_value("Secondary Font", vi.get('secondary_typography')))
+        story.append(self._create_key_value("Imagery Style", vi.get('imagery_style')))
+        story.append(self._create_key_value("Logo Analysis", vi.get('logo_analysis')))
+        
+        story.append(Paragraph("COLOR PALETTE", self.styles['LabelIndicated']))
+        for color in vi.get('primary_colors', []) + vi.get('secondary_colors', []):
+            hex_c = color.get('hex_code', '')
+            psy = color.get('psychology', '')
+            story.append(self._create_key_value(hex_c, psy))
+            
+        story.append(Paragraph("VISUAL RULES", self.styles['LabelIndicated']))
+        rules = vi.get('rules', {})
+        story.append(Paragraph("DOs", self.styles['BodyTextSmall']))
+        story.append(self._create_list(rules.get('dos', [])))
+        story.append(Paragraph("DONTs", self.styles['BodyTextSmall']))
+        story.append(self._create_list(rules.get('donts', [])))
+        
+        if vi.get('visual_props_advice'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Visual Integration", vi.get('visual_props_advice')))
+            
+        story.append(PageBreak())
+        
+        # --- 3. TONE OF VOICE ---
+        vo = self.data.get('voice', {})
+        story.append(Paragraph("3. Tone of Voice", self.styles['SectionHeader']))
+        story.append(Paragraph(f"Summary: {vo.get('five_word_summary', '')}", self.styles['LabelIndicated']))
+        
+        story.append(Paragraph("LANGUAGE PATTERNS", self.styles['LabelIndicated']))
+        story.append(Paragraph("Signatures", self.styles['BodyTextSmall']))
+        story.append(self._create_list(vo.get('signature_patterns', [])))
+        story.append(Paragraph("Forbidden", self.styles['BodyTextSmall']))
+        story.append(self._create_list(vo.get('forbidden_phrases', [])))
+        
+        story.append(Paragraph("WRITING RULES", self.styles['LabelIndicated']))
+        story.append(self._create_key_value("Guidelines", vo.get('writing_style_rules')))
+        story.append(self._create_key_value("Reading Level", vo.get('flesch_kincaid_target')))
+        
+        if vo.get('writing_style_hints'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Copywriting Strategy", vo.get('writing_style_hints')))
+            
+        story.append(PageBreak())
+        
+        # --- 4. MARKET POSITIONING ---
+        mp = self.data.get('positioning', {})
+        story.append(Paragraph("4. Market Positioning", self.styles['SectionHeader']))
+        story.append(Paragraph("POSITIONING", self.styles['LabelIndicated']))
+        story.append(Paragraph(str(mp.get('positioning_statement', '')), self.styles['BodyTextSmall']))
+        story.append(Spacer(1, 10))
+        story.append(self._create_key_value("Price Point", mp.get('price_positioning')))
+        story.append(self._create_key_value("Coordinates", mp.get('brand_coordinates')))
+        
+        story.append(Paragraph("COMPETITORS", self.styles['LabelIndicated']))
+        for comp in mp.get('competitors', []):
+            story.append(self._create_key_value(comp.get('name', 'Comp.'), comp.get('differentiation', '')))
+            
+        swot = mp.get('swot_analysis', {})
+        story.append(Paragraph("SWOT ANALYSIS", self.styles['LabelIndicated']))
+        story.append(self._create_key_value("Strengths", ", ".join(swot.get('strengths', []))))
+        story.append(self._create_key_value("Weaknesses", ", ".join(swot.get('weaknesses', []))))
+        story.append(self._create_key_value("Opportunities", ", ".join(swot.get('opportunities', []))))
+        story.append(self._create_key_value("Threats", ", ".join(swot.get('threats', []))))
+        
+        if mp.get('whitespace_opportunities'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Market Whitespace", mp.get('whitespace_opportunities')))
+            
+        story.append(PageBreak())
+
+        # --- 5. AUDIENCE INTELLIGENCE ---
+        au = self.data.get('audience', {})
+        story.append(Paragraph("5. Audience Intelligence", self.styles['SectionHeader']))
+        for icp in au.get('icps', []):
+            story.append(Paragraph(f"PERSONA: {str(icp.get('name', '')).upper()}", self.styles['LabelIndicated']))
+            story.append(self._create_key_value("Demographics", icp.get('demographics')))
+            story.append(self._create_key_value("Motivations", icp.get('motivations')))
+            story.append(self._create_key_value("Media Habits", icp.get('media_habits')))
+            story.append(self._create_key_value("Purchase Triggers", icp.get('purchase_triggers')))
+            
+            emap = icp.get('empathy_map', {})
+            emap_str = f"Think: {emap.get('think')} | Feel: {emap.get('feel')} | Say: {emap.get('say')} | Do: {emap.get('do')}"
+            story.append(self._create_key_value("Empathy Map", emap_str))
+            story.append(Spacer(1, 10))
+
+        story.append(PageBreak())
+
+        # --- 6. PRODUCT / SERVICE DNA ---
+        pr = self.data.get('product', {})
+        story.append(Paragraph("6. Product / Service DNA", self.styles['SectionHeader']))
+        story.append(self._create_key_value("Hero Product", pr.get('hero_product')))
+        story.append(self._create_key_value("Pricing Psych", pr.get('pricing_psychology')))
+        
+        story.append(Paragraph("VALUE PROPOSITION", self.styles['LabelIndicated']))
+        vc = pr.get('value_canvas', {})
+        story.append(self._create_key_value("Gains", ", ".join(vc.get('gains', []))))
+        story.append(self._create_key_value("Pains Eliminated", ", ".join(vc.get('pains', []))))
+        story.append(self._create_key_value("Jobs To Done", ", ".join(vc.get('jobs_to_be_done', []))))
+        
+        story.append(Paragraph("FEATURE TO BENEFIT", self.styles['LabelIndicated']))
+        for fb in pr.get('feature_mapping', []):
+            f_str = f"<b>{fb.get('feature')}</b> -> {fb.get('benefit')} ({fb.get('emotional_outcome')})"
+            story.append(Paragraph(f"• {f_str}", self.styles['BodyTextSmall']))
+            
+        if pr.get('commercial_translation_hints'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Commercial Translation", pr.get('commercial_translation_hints')))
+            
+        story.append(PageBreak())
+
+        # --- 7. CAMPAIGN INTELLIGENCE ---
+        ca = self.data.get('campaign', {})
+        story.append(Paragraph("7. Campaign Intelligence", self.styles['SectionHeader']))
+        story.append(Paragraph("OBJECTIVES & PRIORITIES", self.styles['LabelIndicated']))
+        story.append(self._create_key_value("Platform Priority", ca.get('platform_priority')))
+        story.append(Paragraph("Top Objectives", self.styles['BodyTextSmall']))
+        story.append(self._create_list(ca.get('top_objectives', [])))
+        
+        story.append(Paragraph("CONTENT STRATEGY", self.styles['LabelIndicated']))
+        story.append(Paragraph("Content Pillars", self.styles['BodyTextSmall']))
+        story.append(self._create_list(ca.get('content_pillars', [])))
+        story.append(Paragraph("Creative Themes", self.styles['BodyTextSmall']))
+        story.append(self._create_list(ca.get('creative_themes', [])))
+        
+        if ca.get('content_pillar_advice'):
+            story.append(Spacer(1, 10))
+            story.append(self._create_callout("Content Guidance", ca.get('content_pillar_advice')))
+            
+        # --- 8. AUDIT & METHODOLOGY ---
+        au_sec = self.data.get('audit', {})
         story.append(Spacer(1, 20))
-        
-        # DYNAMIC SECTIONS
-        sections = [
-            ("visual", "2. Visual Identity System", "visual_props_advice"),
-            ("voice", "3. Tone of Voice", "writing_style_hints"),
-            ("positioning", "4. Market Positioning", "market_crunch_hints"),
-            ("audience", "5. Audience Intelligence", None)
-        ]
-        
-        for key, title, guidance_key in sections:
-            sec_data = self.data.get(key, {})
-            if not sec_data: continue
-            
-            block = [Paragraph(title, self.styles['SectionHeader'])]
-            
-            if key == "visual":
-                block.append(Paragraph("Imagery Style", self.styles['LabelIndicated']))
-                block.append(Paragraph(sec_data.get('imagery_style', 'N/A'), self.styles['BodyTextSmall']))
-            elif key == "audience":
-                for icp in sec_data.get('icps', []):
-                    block.append(Paragraph(f"Persona: {icp.get('name', '')}", self.styles['LabelIndicated']))
-                    block.append(Paragraph(icp.get('demographics', ''), self.styles['BodyTextSmall']))
-            
-            if guidance_key and sec_data.get(guidance_key):
-                block.append(self._create_callout(f"{key} Integration", sec_data.get(guidance_key)))
-            
-            story.append(KeepTogether(block))
-            story.append(Spacer(1, 20))
+        story.append(Paragraph("8. Data Audit & Confidence", self.styles['SectionHeader']))
+        story.append(self._create_key_value("Overall Score", f"{au_sec.get('overall_score', 0)}/100"))
+        story.append(self._create_key_value("Quality", au_sec.get('data_quality_indicators')))
+        story.append(self._create_key_value("Gaps Found", au_sec.get('identified_gaps')))
 
         # 3. SWITCH TO CENTRALLY ISOLATED SIGN-OFF
         story.append(NextPageTemplate('SignoffTemplate'))
