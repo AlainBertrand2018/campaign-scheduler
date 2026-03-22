@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from models.kyc import MasterBrandDNA
+from models.kyc import MasterBrandDNA, BrandFoundation
 from utilities.web_scraper import deep_scan_url
 
 
@@ -157,16 +157,27 @@ Produce the exhaustive 9-section MasterBrandDNA output.
                 })
 
         # Inject up to 3 website images that the Browser Agent retrieved
-        for sc_img in scraped_images:
-            content_parts.append({
-                "type": "image_url",
-                "image_url": {"url": sc_img["base64"]}
-            })
+        for sc_img in scraped_images[:3]:
+            if sc_img.get("base64"):
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {"url": sc_img["base64"]}
+                })
 
         human_msg = HumanMessage(content=content_parts)
 
-        # Apply structural enforcement using generic invoke rather than chain if necessary,
-        # but with_structured_output works well with ChatGoogleGenerativeAI messages
-        llm_with_structure = self.model.with_structured_output(MasterBrandDNA)
-        
-        return await llm_with_structure.ainvoke([system_msg, human_msg])
+        # Apply structural enforcement with error handling
+        try:
+            llm_with_structure = self.model.with_structured_output(MasterBrandDNA)
+            dna_result = await llm_with_structure.ainvoke([system_msg, human_msg])
+            
+            if dna_result:
+                return dna_result
+            
+            print("WARNING: LLM returned None for structured output. Returning default model.")
+            return MasterBrandDNA(foundation=BrandFoundation(brand_name=brand_name))
+            
+        except Exception as e:
+            print(f"ERROR: Structured extraction failed: {e}")
+            # Return a model with at least the brand name so the PDF isn't entirely blank
+            return MasterBrandDNA(foundation=BrandFoundation(brand_name=brand_name))

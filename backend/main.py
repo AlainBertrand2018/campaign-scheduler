@@ -47,21 +47,38 @@ async def extract_dna_endpoint(request: Request):
     
     data = await request.json()
     
-    # 1. Engage KYC Chain (Agent 1)
-    kyc = KYCChain()
-    dna_result = await kyc.extract_brand_dna(data)
-    dna_dict = dna_result.model_dump()
-    
-    # 2. Immediately Generate the Agency-Grade PDF Reports
-    p_path, p_name, m_path, m_name = generate_dna_pdf(dna_dict)
-    
-    # 3. Return the payload to the frontend
-    return JSONResponse({
-        "status": "success",
-        "data": dna_dict,
-        "preview_pdf_url": f"{base_url}/exports/{p_name}",
-        "master_pdf_url": f"{base_url}/exports/{m_name}"
-    })
+    try:
+        # 1. Engage KYC Chain (Agent 1)
+        kyc = KYCChain()
+        dna_result = await kyc.extract_brand_dna(data)
+        
+        if dna_result is None:
+            print("ERROR: KYCChain returned None")
+            return JSONResponse({
+                "status": "error",
+                "message": "The AI failed to generate a structured Brand DNA. This can happen with very complex inputs or API timeouts."
+            }, status_code=500)
+
+        dna_dict = dna_result.model_dump()
+        
+        # 2. Immediately Generate the Agency-Grade PDF Reports
+        p_path, p_name, m_path, m_name = generate_dna_pdf(dna_dict)
+        
+        # 3. Return the payload to the frontend
+        return JSONResponse({
+            "status": "success",
+            "data": dna_dict,
+            "preview_pdf_url": f"{base_url}/exports/{p_name}",
+            "master_pdf_url": f"{base_url}/exports/{m_name}"
+        })
+    except Exception as e:
+        import traceback
+        print(f"FATAL_EXTRACTION_ERROR: {e}")
+        traceback.print_exc()
+        return JSONResponse({
+            "status": "error", 
+            "message": str(e)
+        }, status_code=500)
 
 @app.get("/exports/{filename}")
 async def serve_exports(filename: str):
