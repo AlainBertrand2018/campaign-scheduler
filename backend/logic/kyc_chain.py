@@ -78,7 +78,7 @@ PLAYBOOK CONTEXT:
         
         if website and website.lower() != 'not provided':
             try:
-                scraping_result = await deep_scan_url(website, max_images=10)
+                scraping_result = await deep_scan_url(website, max_images=3)
                 if "error" not in scraping_result:
                     scraped_text = scraping_result.get("raw_text", scraped_text)
                     scraped_colors = scraping_result.get("colors", [])
