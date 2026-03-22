@@ -235,7 +235,7 @@ class DNAReportGenerator:
         elements.append(Paragraph(vd.get('imagery_style', 'N/A'), self.styles['AText']))
         elements.append(Spacer(1, 10))
         elements.append(self._create_guidance_box("Color Psychology & Visual Props", 
-            f"<b>Color Analysis:</b> {vd.get('primary_colors', [{}])[0].get('color_critical_analysis', 'N/A')}<br/>"
+            f"<b>Color Analysis:</b> {vd.get('primary_secondary_colors_analysis', 'N/A')}<br/>"
             f"<b>Advertising Usage:</b> {vd.get('advertising_usage_hints', 'N/A')}<br/>"
             f"<b>Props Advice:</b> {vd.get('visual_props_advice', 'N/A')}"
         ))

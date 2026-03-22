@@ -297,7 +297,7 @@ export default function BrandDNAApp() {
                       </div>
 
                       <div>
-                        <label className={labelCls}>Brand Logo *</label>
+                        <label className={labelCls}>Brand Logo, Audio, or Video *</label>
                         <div className={`h-28 bg-[#0a0a0f] border-2 border-dashed ${form.logo ? 'border-emerald-500/30' : 'border-white/[0.06]'} rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-indigo-500/30 transition-all relative group`}>
                           {form.logo ? (
                             <div className="flex items-center gap-2">
@@ -307,10 +307,10 @@ export default function BrandDNAApp() {
                           ) : (
                             <>
                               <ImagePlus className="w-6 h-6 text-slate-700 group-hover:text-indigo-500 transition-colors" />
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Upload Logo File</span>
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-600">Upload Media File (Image, Audio, Video)</span>
                             </>
                           )}
-                          <input type="file" accept="image/*"
+                          <input type="file" accept="image/*,video/*,audio/*"
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             onChange={e => set('logo', e.target.files?.[0] || null)} />
                         </div>
@@ -577,6 +577,28 @@ export default function BrandDNAApp() {
                        <button onClick={handleDownload} className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-extrabold uppercase tracking-[0.1em] text-[10px] px-6 py-3 rounded-xl hover:from-emerald-500 hover:to-teal-400 transition-all shadow-lg shadow-emerald-500/20">
                           <Download className="w-4 h-4" /> Download In-Depth Master Report (PDF)
                        </button>
+                    </div>
+                )}
+
+                {/* VISUAL ASSETS DISCOVERED */}
+                {result?.visual?.extracted_app_images && result.visual.extracted_app_images.length > 0 && (
+                    <div className="mt-8 space-y-4 relative z-10 w-full">
+                        <div className="flex items-center gap-3">
+                            <ImagePlus className="w-4 h-4 text-indigo-400" />
+                            <h4 className="text-xs font-extrabold text-white uppercase tracking-widest">Extracted Visual Signatures</h4>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {result.visual.extracted_app_images.map((imgUrl: string, idx: number) => (
+                                <a key={idx} href={imgUrl} target="_blank" rel="noopener noreferrer" className="group block relative aspect-video bg-[#0f0f13] rounded-xl overflow-hidden border border-white/[0.04] hover:border-indigo-500/50 transition-colors">
+                                    {/* Using an img tag to render the remote URL */}
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={imgUrl} alt={`Extracted Brand Asset ${idx+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <p className="text-[9px] font-mono text-white/70 truncate w-full">{imgUrl}</p>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 )}
               </motion.div>

@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from models.kyc import MasterBrandDNA
+from utilities.web_scraper import deep_scan_url
+
 
 # Load environment variables
 load_dotenv()
@@ -39,10 +41,10 @@ You are performing a highly critical "Strategic Consultation Brief" on a brand.
 You MUST return highly structured, accurate, and perceptive JSON matching the MasterBrandDNA schema.
 
 IDENTITY GUARDRAIL (CRITICAL):
-1. THE BRAND NAME: Strictly prioritize the 'Description' provided by the user to identify the brand name. 
-2. If the user mentions a name in the description (e.g., "AVA The Bureau"), that IS the brand name, regardless of what the URL scraping reveals.
-3. If the URL scraping reveals a different entity (e.g., "Bias Auditors"), you must treat that entity as a PARTNER, a SUB-MODULE, or a COMPETITOR, but NOT the subject of this report.
-4. DO NOT HALLUCINATE: If the scraped data feels disconnected from the user's description, prioritize the user's description.
+1. THE BRAND NAME: Strictly use the 'Brand Name' provided by the user in the "PRIMARY BRAND SOURCE OF TRUTH". 
+2. The brand name IS exactly what the user provided, regardless of what the website URL or scraped data reveals.
+3. If the scraped data reveals a different entity (e.g. if the user provides "AVA The Bureau" but the URL is about "Bias Auditors"), you must treat that scraped entity as a PARTNER, a PARENT COMPANY, or a COMPETITOR, but NOT the subject of this report. The report is exclusively about the User's Brand Name.
+4. DO NOT HALLUCINATE: If the scraped data feels disconnected from the user's manual inputs, ALWAYS prioritize the user's manual inputs (Manifesto, Target Customer, etc.).
 
 CRITICAL ANALYTICAL INSTRUCTIONS:
 1. STOP BEING SYCOPHANTIC. Do not endlessly praise the brand. Give an uncompromising, boardroom-ready, objective analysis. 
@@ -54,36 +56,111 @@ PLAYBOOK CONTEXT:
 {playbook_content}
 """)
         
-        url = input_data.get('url', 'Not provided')
-        description = input_data.get('description', 'Not provided')
+        brand_name = input_data.get('name', 'Not provided')
+        website = input_data.get('website', 'Not provided')
+        industry = input_data.get('industry', 'Not provided')
+        market = input_data.get('market', 'Not provided')
+        language = input_data.get('language', 'Not provided')
+        tagline = input_data.get('tagline', 'Not provided')
+        target_customer = input_data.get('target_customer', 'Not provided')
+        problem_solved = input_data.get('problem_solved', 'Not provided')
         manifesto = input_data.get('manifesto', 'Not provided')
+        competitors = input_data.get('competitors', [])
+        social_urls = input_data.get('social_urls', [])
         image_base64 = input_data.get('imageBase64', None)
 
-        text_content = f"""
-PRIMARY BRAND SOURCE OF TRUTH:
-User-Provided Description: {description}
-User-Provided Manifesto: {manifesto}
+        # 1. Scrape the website if available
+        scraped_text = "No relevant text extracted from URL."
+        scraped_colors = []
+        scraped_fonts = []
+        scraped_images = []
+        scraping_result = {}
+        
+        if website and website.lower() != 'not provided':
+            try:
+                scraping_result = await deep_scan_url(website, max_images=10)
+                if "error" not in scraping_result:
+                    scraped_text = scraping_result.get("raw_text", scraped_text)
+                    scraped_colors = scraping_result.get("colors", [])
+                    scraped_fonts = scraping_result.get("fonts", [])
+                    scraped_images = scraping_result.get("images", [])
+            except Exception as e:
+                print(f"Scraping failed: {e}")
 
-SECONDARY SIGNAL SOURCE:
-URL to analyze: {url}
+        # Ensure image urls extracted are properly populated
+        explicit_images_urls = [img["url"] for img in scraped_images]
+
+        text_content = f"""
+PRIMARY BRAND SOURCE OF TRUTH (ABSOLUTE PRIORITY):
+Brand Name: {brand_name}
+Industry Sector: {industry}
+Target Market: {market}
+Language: {language}
+Tagline/Slogan: {tagline}
+Target Customer: {target_customer}
+Problem Solved: {problem_solved}
+Manifesto/Core Narrative: {manifesto}
+
+SECONDARY SIGNALS (FOR CONTEXT ONLY):
+Website URL: {website}
+Social URLs: {', '.join(social_urls) if social_urls else 'None'}
+Competitors: {', '.join(competitors) if competitors else 'None'}
+
+        BROWSER AGENT RESULTS (WEBSITE COPY & AESTHETIC SIGNALS):
+        Title: {scraping_result.get("title", 'Not extracted')}
+        Meta Tags (Underlying Semantic Signals):
+        {scraping_result.get("meta_tags", 'Not extracted')}
+        
+        Robot Info (sitemaps if found):
+        {scraping_result.get("robots_txt", 'Not checked/blocked')}
+        
+        Extracted HTML Copy (Header to Footer): 
+        {scraped_text}
+
+Visual CSS Clues:
+Found Colors: {scraped_colors}
+Found Fonts: {scraped_fonts}
 
 TASK: 
-Deep-analyze the brand mentioned in the "PRIMARY BRAND SOURCE OF TRUTH". 
-If the URL metadata contains different branding, explain it as a 'Market Context' or 'Platform Feature' within the report, but the SUBJECT of the report must be the brand from the description.
-Produce the exhaustive 8-section MasterBrandDNA output.
+Deep-analyze the brand "{brand_name}" based ON THE PRIMARY BRAND SOURCE OF TRUTH. 
+If the SECONDARY SIGNALS or BROWSER AGENT RESULTS (like the website URL) contain different branding (e.g. they point to a parent company, a platform, or a partner), you MUST STILL focus the entire report exclusively on "{brand_name}". Treat any conflicting scraped data as 'Market Context' or 'Platform Features', but the SUBJECT of your report must strictly be "{brand_name}".
+When filling out VisualSystem, make sure to explicitly include `extracted_app_images: {explicit_images_urls}`, `extracted_app_fonts`: {scraped_fonts}, and `extracted_app_colors`: {scraped_colors}.
+Produce the exhaustive 9-section MasterBrandDNA output.
 """
         
         content_parts = [{"type": "text", "text": text_content}]
         
-        # If an image was provided, inject it into the vision payload
+        # If a logo or media was provided, inject it into the multimodal payload
         if image_base64:
-            # Ensure it's correctly formatted for langchain
-            if not image_base64.startswith("data:"):
-                # Guessing jpeg as default if prefix missing
-                image_base64 = f"data:image/jpeg;base64,{image_base64}"
+            if image_base64.startswith("data:") and ";base64," in image_base64:
+                prefix, b64_data = image_base64.split(";base64,")
+                mime_type = prefix.replace("data:", "")
+                
+                if mime_type.startswith("image/"):
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": image_base64}
+                    })
+                else:
+                    # Assume Audio or Video
+                    # Try passing as media dict (supported by some LangChain versions for Google)
+                    content_parts.append({
+                        "type": "media",
+                        "mime_type": mime_type,
+                        "data": b64_data
+                    })
+            else:
+                # Fallback to pure image_url
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                })
+
+        # Inject up to 3 website images that the Browser Agent retrieved
+        for sc_img in scraped_images:
             content_parts.append({
                 "type": "image_url",
-                "image_url": {"url": image_base64}
+                "image_url": {"url": sc_img["base64"]}
             })
 
         human_msg = HumanMessage(content=content_parts)

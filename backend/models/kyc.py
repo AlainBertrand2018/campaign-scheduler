@@ -38,6 +38,7 @@ class VisualDoDont(BaseModel):
 class VisualSystem(BaseModel):
     primary_colors: List[ColorDefinition] = Field(..., description="Primary brand colors and critical analysis")
     secondary_colors: List[ColorDefinition] = Field(..., description="Secondary/accent colors")
+    primary_secondary_colors_analysis: str = Field(..., description="Critical analysis: is this a good or bad color choice for the sector?")
     advertising_usage_hints: str = Field(..., description="Hints on how to use the entire palette across advertising visuals and artworks.")
     visual_props_advice: str = Field(..., description="Advise on what kinds of visual props will work best for photography or video.")
     primary_typography: str = Field(..., description="Primary font family and its hierarchy rules")
@@ -45,6 +46,9 @@ class VisualSystem(BaseModel):
     logo_analysis: str = Field(..., description="Style classification and safe usage inferences of the logo")
     imagery_style: str = Field(..., description="Photography style, illustration vs photography, mood, lighting, subject matter patterns")
     rules: VisualDoDont
+    extracted_app_images: List[str] = Field(..., description="List of image URLs extracted during the web scrape, directly copy-pasted from the 'SECONDARY SIGNALS'")
+    extracted_app_fonts: List[str] = Field(..., description="List of fonts extracted during the web scrape.")
+    extracted_app_colors: List[str] = Field(..., description="List of colors extracted during the web scrape.")
 
 # --- SECTION 3: Tone of Voice & Copy ---
 class ToneDimensions(BaseModel):
