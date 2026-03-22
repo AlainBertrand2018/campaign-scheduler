@@ -160,7 +160,7 @@ class CampaignIntelligence(BaseModel):
 # --- SECTION 8: Confidence & Audit ---
 class ConfidenceAudit(BaseModel):
     overall_score: int = Field(80, description="0-100 overall brand DNA confidence score")
-    scoring_benchmark_explanation: str = Field("Standard scoring applied.", description="Elaborate on the scoring benchmark, why this score was attributed, and exactly how to upgrade the score.")
+    scoring_benchmark_explanation: str = Field("Verdict pending.", description="Give a decisive, 1-sentence executive verdict on brand readiness, followed by EXACTLY 3 high-impact bullet points on how to improve. DO NOT write an essay.")
     data_quality_indicators: str = Field("Good quality signals.", description="Data source quality rating per source")
     identified_gaps: str = Field("Minimal gaps found.", description="What's missing and how it affects output quality")
     gap_resolution_strategy: str = Field("Ongoing enrichment recommended.", description="Elaborate on the identified gaps. Suggest explicit methods and actions to resolve them.")

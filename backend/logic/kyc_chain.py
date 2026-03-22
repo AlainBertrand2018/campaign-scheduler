@@ -98,16 +98,18 @@ class KYCChain:
                 playbook_content = f.read()[:5000]
 
         system_prompt = f"""
-You are Enola, the Agency Director. You are orchestrating the final synthesis of a Brand DNA Manifest.
+You are Enola, an elite Agency Director at a globally recognized advertising firm. You are orchestrating the final synthesis of a Brand DNA Manifest.
 You have the outputs from several Specialized Sub-Agents (Browser, Visual Auditor).
+You are not a standard AI assistant. You speak with decisive, razor-sharp, executive authority. Do not praise the brand unnecessarily. Give actionable, high-level strategic intelligence.
 
 NON-NEGOTIABLE MISSIONS:
 1. TRUTH OVER HALLUCINATION: Priority is User Intake -> Scraped Signals -> Inference.
 2. COMPLETENESS: Every field in the schema MUST be filled with high-value professional content.
-3. NO DEFAULT STRINGS: Never return placeholders from the schema like "Story under reconstruction.", "Analysis pending.", or "Standard behavior.". You MUST overwrite every single field with unique, brand-specific analysis.
+3. NO DEFAULT STRINGS: Never return placeholders. You MUST overwrite every single field with unique, brand-specific analysis.
 4. ARCHETYPE MAPPING: You MUST assign a primary and secondary archetype (e.g. Hero, Sage, Explorer).
 5. BRAND STORY: Write a compelling 2-3 paragraph brand story based on the Manifesto and Problem Solved.
 6. DEPTH: If a field asks for a list, provide at least 3-5 items. If it asks for a description, provide at least 2 sentences.
+7. TONE: Be direct, highly professional, and slightly intimidating in your competence. No filler. No "based on the data provided" disclaimers.
 
 PLAYBOOK DIRECTIVES:
 {playbook_content}
@@ -129,7 +131,7 @@ Target Customer: {input_data.get('target_customer', 'N/A')}
 Problem Solved: {input_data.get('problem_solved', 'N/A')}
 Market: {input_data.get('market', 'Global')}
 
-TASK: Produce the complete 9-section MasterBrandDNA JSON.
+TASK: Produce the complete 9-section MasterBrandDNA JSON mirroring Enola's elite standard.
 """
 
         try:
@@ -144,9 +146,19 @@ TASK: Produce the complete 9-section MasterBrandDNA JSON.
                 # Integrity Check: Ensure name and visual assets are correctly mapped
                 dna_result.foundation.brand_name = brand_name
                 
+                # Pre-populate the extracted_app_images with the User Logo first, then scraped images
+                if logo_b64:
+                    dna_result.visual.extracted_app_images.append(logo_b64)
+
                 # If the Visual Auditor found images or fonts, ensure they are in the 'extracted' lists
                 if "images" in scraping_result:
-                    dna_result.visual.extracted_app_images = [img["url"] for img in scraping_result["images"] if not img.get("base64") or len(img["base64"]) < 100000] # Don't store large b64 in the dna list
+                    for img in scraping_result["images"]:
+                        url = img.get("url")
+                        b64 = img.get("base64")
+                        if url and not url.startswith("data:"):
+                            dna_result.visual.extracted_app_images.append(url)
+                        elif b64 and len(b64) < 100000:
+                            dna_result.visual.extracted_app_images.append(b64)
                 
                 # Safety: If fonts or colors were missing from the audit, use scraping results
                 if not dna_result.visual.extracted_app_fonts and "fonts" in scraping_result:
