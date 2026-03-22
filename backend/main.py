@@ -28,6 +28,7 @@ app = FastAPI(title="ENOLA_AI_SWARM_SERVICE")
 # 2. Add CORS Middleware for Vercel Frontend
 # Allow dynamic frontend URL via ENV for Render/Vercel parity
 allowed_origins = [
+    "https://enola.launchableai.online",
     "https://enola-ai.vercel.app", 
     "http://localhost:3000",
     "http://127.0.0.1:3000",

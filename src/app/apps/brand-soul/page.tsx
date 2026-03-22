@@ -151,7 +151,8 @@ export default function BrandDNAApp() {
       delete payload.logo;
     }
 
-    const extractionPromise = fetch('http://localhost:8000/api/extract-dna', {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+    const extractionPromise = fetch(`${apiBase}/api/extract-dna`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
