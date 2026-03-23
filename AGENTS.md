@@ -142,10 +142,19 @@ Ingest all available brand signals — websites, social profiles, existing creat
     "identity": { "name", "archetype", "mission", "values" },
     "voice": { "tone", "language_style", "forbidden_phrases", "signature_expressions" },
     "visual": { "primary_colours", "typography", "logo_rules", "imagery_style" },
-    "positioning": { "usp", "target_market", "competitive_whitespace" }
+    "positioning": { "usp", "target_market", "competitive_whitespace" },
+    "strategic_dive": {
+      "in_depth_analysis": "Narrative intelligence extracting core patterns",
+      "meaning_explained": "The strategic 'why' and competitive advantage",
+      "enolas_guidance": "Direct actionable instructions for downstream agents"
+    }
   }
 }
 ```
+
+> [!IMPORTANT]
+> **The Tripartite Analysis Rule (Strategic Dive)**
+> All core DNA extraction sections MUST produce this three-part narrative intelligence. This is a foundational principle of the Enola.ai extraction engine and must be preserved across all versions of the KYC Manager and reporting layouts.
 
 ---
 
@@ -498,7 +507,7 @@ All agents read from and write to the following shared data objects:
 |---|---|---|
 | `strategic_directive` | Enola (Director) | Strategist, All downstream agents |
 | `enola_playbook` | Enola (Director) | Enola only (R/W) |
-| `brand_dna` | KYC Manager | All agents |
+| `brand_dna` | KYC Manager | All agents | (Mandatory Tripartite Narrative) |
 | `product_dna` | Product Manager | Strategist, Copywriter, Art Director |
 | `campaign_blueprint` | Strategist | All downstream agents |
 | `audience_personas` | Surveyor | Copywriter, Art Director, Scheduler |

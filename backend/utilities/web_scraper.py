@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import httpx
+from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from playwright.async_api import async_playwright
 
@@ -180,5 +182,55 @@ async def deep_scan_url(url: str, max_images: int = 3) -> dict:
             }
             
     except Exception as e:
-        return {"error": str(e)}
+        print(f"Playwright failed: {e}. Executing BeautifulSoup Fallback Protocol.")
+        return await _fallback_scrape(url)
+
+async def _fallback_scrape(url: str) -> dict:
+    """
+    Bomb-proof HTTP fallback when Headless Chrome (Playwright) fails 
+    due to cloud host missing OS libraries (common on Render).
+    """
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+            # Spoof standard browser headers
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            html = response.text
+            
+            soup = BeautifulSoup(html, "html.parser")
+            
+            # 1. Clean script / style elements
+            for script in soup(["script", "style", "noscript"]):
+                script.extract()
+            
+            raw_text = soup.get_text(separator=' ', strip=True)
+            if len(raw_text) > 12000:
+                raw_text = raw_text[:12000] + "... (truncated)"
+                
+            title = soup.title.string if soup.title else ""
+            
+            # 2. Extract Images
+            images_payload = []
+            for img in soup.find_all("img"):
+                src = img.get("src")
+                if src:
+                    full_url = urljoin(url, src)
+                    if full_url.startswith("http") and not full_url.endswith(".svg"):
+                        images_payload.append({"url": full_url, "base64": full_url})
+                        if len(images_payload) >= 3:
+                            break
+                            
+            return {
+                "title": title,
+                "meta_tags": "Fallback: Meta not fully parsed.",
+                "robots_txt": "Not checked",
+                "raw_text": raw_text,
+                "colors": [],
+                "fonts": [],
+                "images": images_payload
+            }
+    except Exception as fallback_e:
+        print(f"Fallback scraper also failed: {fallback_e}")
+        return {"error": str(fallback_e)}
 

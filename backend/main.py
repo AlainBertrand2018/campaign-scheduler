@@ -1,5 +1,7 @@
 import os
+import sys
 import json
+import asyncio
 from typing import Dict, Any, List
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
@@ -17,8 +19,12 @@ from logic.publisher_chain import PublisherChain
 from logic.statistician_chain import StatisticianChain
 from logic.accountant_chain import AccountantChain
 from logic.nanobanana_chain import BananaChain
-from utilities.pdf_manager import generate_dna_pdf
+from utilities.html_deck_manager import generate_dna_deck_pdf
+from datetime import datetime
 from dotenv import load_dotenv
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 load_dotenv()
 
@@ -72,29 +78,41 @@ async def extract_dna_endpoint(request: Request):
         if dna_result is None:
             print("ERROR: KYCChain returned None")
             return JSONResponse({
-                "status": "error",
+                "ok": False,
+                "error": "SILENT_AI_FAILURE",
                 "message": "The AI failed to generate a structured Brand DNA. This can happen with very complex inputs or API timeouts."
             }, status_code=500)
 
         dna_dict = dna_result.model_dump()
         
-        # 2. Immediately Generate the Agency-Grade PDF Reports
-        p_path, p_name, m_path, m_name = await generate_dna_pdf(dna_dict)
-        
-        # 3. Return the payload to the frontend
+        # 2. Return the payload to the frontend IMMEDIATELY
+        # The frontend will now handle the rendering of the "Live Canvas" report.
         return JSONResponse({
-            "status": "success",
-            "data": dna_dict,
-            "preview_pdf_url": f"{base_url}/exports/{p_name}",
-            "master_pdf_url": f"{base_url}/exports/{m_name}"
+            "ok": True,
+            "status": "success", 
+            "data": dna_dict
         })
+    except ValueError as ve:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "ok": False,
+                "error": "VALIDATION_ERROR",
+                "message": str(ve)
+            }
+        )
     except Exception as e:
         import traceback
-        print(f"FATAL_EXTRACTION_ERROR: {e}")
-        traceback.print_exc()
+        import sys
+        
+        err_trace = traceback.format_exc()
+        print(f"FATAL_EXTRACTION_ERROR: {e}", file=sys.stderr)
+
         return JSONResponse({
-            "status": "error", 
-            "message": str(e)
+            "ok": False,
+            "error": "INTERNAL_EXTRACTION_ERROR",
+            "message": "Unexpected backend failure during DNA extraction",
+            "details": err_trace
         }, status_code=500)
 
 @app.get("/exports/{filename}")

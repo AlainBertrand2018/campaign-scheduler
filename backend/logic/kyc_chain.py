@@ -1,9 +1,12 @@
 import os
 import json
+import sys
+import re
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
+from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from models.kyc import MasterBrandDNA, BrandFoundation, VisualSystem, VoiceProfile, MarketPositioning
@@ -36,12 +39,14 @@ class KYCChain:
             max_retries=3
         )
 
-        # 2. Strategic Orchestrator (DeepSeek R1 via OpenRouter - The highest reasoning tier)
+        # 2. Strategic Orchestrator (DeepSeek V3 via OpenRouter - Best for JSON Reasoning)
         self.reasoning_model = ChatOpenAI(
-            model="deepseek/deepseek-r1",
+            model="deepseek/deepseek-chat",
             api_key=os.getenv("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1",
             temperature=0.0,
+            max_tokens=8000,
+            model_kwargs={"response_format": {"type": "json_object"}},
             max_retries=3
         )
 
@@ -107,6 +112,8 @@ class KYCChain:
             with open(playbook_path, "r", encoding="utf-8") as f:
                 playbook_content = f.read()[:5000]
 
+        parser = PydanticOutputParser(pydantic_object=MasterBrandDNA)
+
         system_prompt = f"""
 You are Enola, an elite Agency Director at a globally recognized advertising firm. You are orchestrating the final synthesis of a Brand DNA Manifest.
 You have the outputs from several Specialized Sub-Agents (Browser, Visual Auditor).
@@ -115,11 +122,14 @@ You are not a standard AI assistant. You speak with decisive, razor-sharp, execu
 NON-NEGOTIABLE MISSIONS:
 1. TRUTH OVER HALLUCINATION: Priority is User Intake -> Scraped Signals -> Inference.
 2. COMPLETENESS: Every field in the schema MUST be filled with high-value professional content.
-3. NO DEFAULT STRINGS: Never return placeholders. You MUST overwrite every single field with unique, brand-specific analysis.
-4. ARCHETYPE MAPPING: You MUST assign a primary and secondary archetype (e.g. Hero, Sage, Explorer).
+3. THE STRATEGIC DIVE (A, B, C): Every major core section (Foundation, Visual, Voice, Positioning, Audience, Product, Campaign, Audit, Methodology) MUST include deep strategic narrative across 3 distinct fields:
+    - in_depth_analysis: The raw mapping and breakdown of the section's data.
+    - meaning_explained: Plain English translation of the business or market implication.
+    - enolas_guidance: Highly prescriptive recommendation on how to apply this to an ad campaign.
+4. ARCHETYPE MAPPING: You MUST assign a primary and secondary archetype.
 5. BRAND STORY: Write a compelling 2-3 paragraph brand story based on the Manifesto and Problem Solved.
-6. DEPTH: If a field asks for a list, provide at least 3-5 items. If it asks for a description, provide at least 2 sentences.
-7. TONE: Be direct, highly professional, and slightly intimidating in your competence. No filler. No "based on the data provided" disclaimers.
+6. TONE: Be direct, highly professional, and slightly intimidating in your competence. No filler. No "based on the data provided" disclaimers.
+7. EXECUTIVE SUMMARY: Complete the `executive_summary` section with a high-level synthesis of brand values and EXACTLY 5 bullet points for Spot Advertising and 5 for Campaign Strategy. This is the TL;DR for the Agency Director.
 
 PLAYBOOK DIRECTIVES:
 {playbook_content}
@@ -141,16 +151,79 @@ Target Customer: {input_data.get('target_customer', 'N/A')}
 Problem Solved: {input_data.get('problem_solved', 'N/A')}
 Market: {input_data.get('market', 'Global')}
 
-TASK: Produce the complete 9-section MasterBrandDNA JSON mirroring Enola's elite standard.
+
+
+FORMATTING INSTRUCTIONS:
+{parser.get_format_instructions()}
 """
 
         try:
-            # Bind the schema for the final strategic pass (DeepSeek)
-            llm_with_structure = self.reasoning_model.with_structured_output(MasterBrandDNA)
-            dna_result = await llm_with_structure.ainvoke([
+            # Manually parse the schema rather than relying on underlying hardware API for OpenRouter reliability
+            response = await self.reasoning_model.ainvoke([
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_context)
             ])
+            
+            raw_text = response.content
+            print("Received raw response from DeepSeek...")
+            
+            # 1. Brutally rip out any <think>...</think> blocks common in DeepSeek V3 or R1 outputs
+            raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL)
+            
+            # 2. Extract strictly the JSON markdown block, or fallback to the lowest enclosing curly braces
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', raw_text, flags=re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                start = raw_text.find('{')
+                end = raw_text.rfind('}')
+                if start != -1 and end != -1:
+                    json_str = raw_text[start:end+1]
+                else:
+                    json_str = raw_text
+                    
+            try:
+                # Attempt strict schema parsing
+                dna_result = parser.parse(json_str)
+            except Exception as pe:
+                print(f"WARNING: Strict Pydantic parsing failed ({pe}). Attempting surgical loose merge to save data.")
+                try:
+                    # Parse as raw dict
+                    parsed_dict = json.loads(json_str)
+                    
+                    # Prevent DeepSeek from wrapping the entire object in a root namespace (e.g. {"MasterBrandDNA": {...}})
+                    if len(parsed_dict) == 1 and isinstance(list(parsed_dict.values())[0], dict):
+                        inner = list(parsed_dict.values())[0]
+                        if "foundation" in inner or "visual" in inner or "voice" in inner:
+                            parsed_dict = inner
+                    
+                    # Create the fallback canvas
+                    dna_result = MasterBrandDNA()
+                    
+                    # Recursively walk the fallback Pydantic object and overwrite it with whatever the AI successfully generated
+                    def _surgical_update(model_instance, data_dict):
+                        for key, value in data_dict.items():
+                            if hasattr(model_instance, key):
+                                current_attr = getattr(model_instance, key)
+                                # If it's a nested Pydantic model and value is a dict, recurse
+                                if hasattr(current_attr, "model_dump") and isinstance(value, dict):
+                                    _surgical_update(current_attr, value)
+                                # Give up strict typing for lists and primitives if the AI provided them, it's safer than crashing the whole PDF
+                                else:
+                                    try:
+                                        setattr(model_instance, key, value)
+                                    except:
+                                        pass
+                                        
+                    _surgical_update(dna_result, parsed_dict)
+                    print("Surgical merge successful. Maximum data salvaged.")
+                    
+                except Exception as critical_e:
+                    print(f"CRITICAL_JSON_RECOVERY_FAILURE: {critical_e}")
+                    import traceback
+                    print(f"--- PARSE FAIL ---\nException: {critical_e}\nTraceback: {traceback.format_exc()}\n\nRAW JSON_STR:\n{json_str}", file=sys.stderr)
+                    raise critical_e
+            
             
             if dna_result:
                 # Integrity Check: Ensure name and visual assets are correctly mapped

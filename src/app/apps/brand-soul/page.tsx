@@ -103,8 +103,7 @@ export default function BrandDNAApp() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [telemetry, setTelemetry] = useState<TelemetryLine[]>([]);
   const [result, setResult] = useState<any>(null);
-  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
-  const [masterPdfUrl, setMasterPdfUrl] = useState<string | null>(null);
+  const [deckPdfUrl, setDeckPdfUrl] = useState<string | null>(null);
   const totalSteps = 3;
 
   /* ── Form Handlers ── */
@@ -156,7 +155,7 @@ export default function BrandDNAApp() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
-    }).then(res => res.json());
+    });
 
     // 2. Animate telemetry in parallel
     for (let i = 0; i < lines.length; i++) {
@@ -169,16 +168,38 @@ export default function BrandDNAApp() {
 
     // 3. Await Backend Completion
     try {
-        const responseData = await extractionPromise;
-        if (responseData && responseData.status === "success") {
-           setResult(responseData.data);
-           setPreviewPdfUrl(responseData.preview_pdf_url);
-           setMasterPdfUrl(responseData.master_pdf_url);
+        const response = await extractionPromise;
+        const contentType = response.headers.get("content-type") || "";
+        let responseData: any = null;
+        let rawText = "";
+
+        if (contentType.includes("application/json")) {
+            responseData = await response.json();
         } else {
-           console.error("BACKEND_EXTRACTION_FAILURE", responseData);
+            rawText = await response.text();
         }
-    } catch(err) {
-        console.error("FATAL_NETWORK_ERROR", err);
+
+        if (!response.ok || (responseData && responseData.ok === false)) {
+            console.error("BACKEND_EXTRACTION_FAILURE", {
+                status: response.status,
+                statusText: response.statusText,
+                responseData,
+                rawText,
+            });
+            throw new Error(
+                responseData?.message ||
+                responseData?.error ||
+                `Backend request failed with ${response.status} ${response.statusText}`
+            );
+        }
+
+        setResult(responseData.data);
+        
+    } catch(err: any) {
+        console.error("FATAL_NETWORK_OR_PROCESSING_ERROR", err);
+        alert(err.message || "Extraction failed. Please try again.");
+        setPhase('intake');
+        return;
     }
 
     if (lines.length > 0) {
@@ -191,9 +212,14 @@ export default function BrandDNAApp() {
 
   /* ── Report Generation ── */
   const handleDownload = () => {
-    // Opens the Master Brief in a new tab for instant view and manual save
-    if (!masterPdfUrl) return;
-    window.open(masterPdfUrl, '_blank');
+    if (!result) return;
+    try {
+      sessionStorage.setItem('enola_dna_temp', JSON.stringify(result));
+      window.open('/apps/brand-soul/report', '_blank');
+    } catch (e) {
+      console.error("Failed to store data or open report", e);
+      alert("Report payload too large or browser blocked the popup.");
+    }
   };
 
   /* ── Shared Input Classes ── */

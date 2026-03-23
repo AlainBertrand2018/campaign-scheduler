@@ -17,7 +17,7 @@ import { Variants, Transition } from 'framer-motion';
 
 interface Props {
   data: any;
-  onGenerateReport: () => void;
+  onGenerateReport: (type?: 'master' | 'deck') => void;
 }
 
 export default function DnaDashboard({ data, onGenerateReport }: Props) {
@@ -33,7 +33,7 @@ export default function DnaDashboard({ data, onGenerateReport }: Props) {
       transition: { 
         delay: i * 0.1, 
         duration: 0.5, 
-        ease: [0.22, 1, 0.36, 1] // Using cubic-bezier array instead of string for better compatibility
+        ease: [0.22, 1, 0.36, 1] 
       } as Transition
     })
   };
@@ -60,13 +60,16 @@ export default function DnaDashboard({ data, onGenerateReport }: Props) {
           </div>
         </div>
         
-        <button 
-          onClick={onGenerateReport}
-          className="flex items-center gap-2.5 px-6 py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-[#d4d4d8] active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] group"
-        >
-          <Download size={18} className="group-hover:-translate-y-0.5 transition-transform" />
-          Generate In-Depth Report
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button 
+            onClick={() => onGenerateReport()}
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-extrabold rounded-2xl hover:bg-[#d4d4d8] active:scale-95 transition-all shadow-[0_10px_40px_rgba(255,255,255,0.15)] group relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            <Download size={20} className="animate-bounce" />
+            <span className="uppercase tracking-widest text-xs">View High-Impact Strategy Deck</span>
+          </button>
+        </div>
       </motion.div>
 
       {/* Main Grid */}

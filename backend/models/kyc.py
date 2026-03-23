@@ -1,6 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
+class StrategicSection(BaseModel):
+    in_depth_analysis: str = Field("Analysis pending.", description="a. The In-Depth Analysis: The raw strategic mapping and breakdown of this section's data.")
+    meaning_explained: str = Field("Meaning pending.", description="b. What It Means: A translation of the analysis into plain English or business/market implications.")
+    enolas_guidance: str = Field("Guidance pending.", description="c. ENOLA'S STRATEGIC GUIDANCE: Highly prescriptive recommendations on exactly how to apply this insight to an ad campaign or social media strategy. (Recommend strategy, application, methodologies).")
+
 # --- SECTION 1: Brand Foundation ---
 class AakerPersonality(BaseModel):
     sincerity: int = Field(5, description="0-10 score for Sincerity")
@@ -11,6 +16,7 @@ class AakerPersonality(BaseModel):
     commentary: str = Field("Standard personality assessment.", description="Brief analysis of this personality profile.")
 
 class BrandFoundation(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Brand Foundation.")
     brand_name: str = Field("Unknown Brand", description="The name of the Brand")
     brand_story: str = Field("Story under reconstruction.", description="Full brand story reconstruction (2-3 paragraphs)")
     mission: str = Field("Mission pending.", description="Core mission statement")
@@ -36,6 +42,7 @@ class VisualDoDont(BaseModel):
     donts: List[str] = Field(default_factory=list, description="Visual patterns to strictly avoid")
 
 class VisualSystem(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Visual Identity.")
     primary_colors: List[ColorDefinition] = Field(default_factory=list, description="Primary brand colors and critical analysis")
     secondary_colors: List[ColorDefinition] = Field(default_factory=list, description="Secondary/accent colors")
     primary_secondary_colors_analysis: str = Field("Color palette under review.", description="Critical analysis: is this a good or bad color choice for the sector?")
@@ -69,6 +76,7 @@ class CopyRewriteSample(BaseModel):
     brand_voice_copy: str = Field("Refined brand voice copy.", description="The same message rewritten perfectly in the brand's unique voice")
 
 class VoiceProfile(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Tone of Voice.")
     five_word_summary: str = Field("Professional, clear, robust, direct, effective.", description="Exact 5 words describing the tone")
     dimensions: ToneDimensions = Field(default_factory=lambda: ToneDimensions())
     voice_dna_integration_analysis: str = Field("Integration analysis pending.", description="Explain how the discovered 'Voice Dimensions' integrate (or not) with the core Brand DNA.")
@@ -92,6 +100,7 @@ class SWOT(BaseModel):
     threats: List[str]
 
 class MarketPositioning(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Market Positioning.")
     positioning_statement: str = Field("Positioning statement under development.", description="Crafted positioning statement")
     market_context_analysis: str = Field("Market context analysis pending.", description="Explain what the global and local markets look like and how the brand positions itself therein.")
     market_crunch_hints: str = Field("Standard market entry hints.", description="Hints on what is usually done by sector actors to capture market share.")
@@ -123,6 +132,7 @@ class ICP(BaseModel):
     empathy_map: EmpathyMap = Field(default_factory=lambda: EmpathyMap(think="Quality", feel="Excited", say="I need this", do="Purchases"))
 
 class AudienceIntelligence(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Audience Intelligence.")
     icps: List[ICP] = Field(default_factory=list, description="3 to 5 fully developed Ideal Customer Profiles / Personas")
     audience_language_patterns: str = Field("Direct and clear.", description="Exact words the audience uses (mined or inferred)")
     buying_journey_stages: str = Field("Awareness to Advocacy.", description="Stages and what content fits each stage")
@@ -139,6 +149,7 @@ class FeatureBenefit(BaseModel):
     emotional_outcome: str = Field("Positive Emotional Outcome")
 
 class ProductDNA(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Product / Service.")
     value_canvas: ValuePropositionCanvas = Field(default_factory=lambda: ValuePropositionCanvas(gains=[], pains=[], jobs_to_be_done=[]))
     value_canvas_analysis: str = Field("Analysis pending.", description="Elaborate on Gains and Pains. Explain how these influence or spotlight the brand's image.")
     feature_mapping: List[FeatureBenefit] = Field(default_factory=list)
@@ -150,6 +161,7 @@ class ProductDNA(BaseModel):
 
 # --- SECTION 7: Campaign Intelligence ---
 class CampaignIntelligence(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Campaign Strategies.")
     top_objectives: List[str] = Field(default_factory=list, description="Top 5 recommended campaign objectives ranked by readiness")
     content_pillars: List[str] = Field(default_factory=list, description="3-5 content pillars with rationale")
     content_pillar_advice: str = Field("Actionable advice pending.", description="Elaborate on the chosen content pillars, giving actionable advice and hints on deployment.")
@@ -159,6 +171,7 @@ class CampaignIntelligence(BaseModel):
 
 # --- SECTION 8: Confidence & Audit ---
 class ConfidenceAudit(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Data Confidence.")
     overall_score: int = Field(80, description="0-100 overall brand DNA confidence score")
     scoring_benchmark_explanation: str = Field("Verdict pending.", description="Give a decisive, 1-sentence executive verdict on brand readiness, followed by EXACTLY 3 high-impact bullet points on how to improve. DO NOT write an essay.")
     data_quality_indicators: str = Field("Good quality signals.", description="Data source quality rating per source")
@@ -166,13 +179,19 @@ class ConfidenceAudit(BaseModel):
     gap_resolution_strategy: str = Field("Ongoing enrichment recommended.", description="Elaborate on the identified gaps. Suggest explicit methods and actions to resolve them.")
     enrichment_actions: str = Field("Update signals periodically.", description="Recommended actions for the user to improve accuracy")
 
-# --- SECTION 9: Methodology & Frameworks ---
 class MethodologyFrameworks(BaseModel):
+    strategic_dive: StrategicSection = Field(default_factory=StrategicSection, description="The mandated deep-dive tripartite analysis for Frameworks & Methodology.")
     frameworks_used: List[str] = Field(default_factory=lambda: ["Aaker", "SWOT", "AIDA"], description="List of frameworks leveraged in this analysis (e.g., Aaker, AIDA, SWOT)")
     framework_explanations: str = Field("Methodology based on standard agency frameworks.", description="Explain the reference benchmarks, case studies, and frameworks used to build this report, detailing why they matter.")
 
+class ExecutiveSummary(BaseModel):
+    brand_values_summary: str = Field("Summary pending.", description="A high-level synthesis of core brand values and what they mean for market positioning.")
+    spot_advertising_recommendations: List[str] = Field(default_factory=list, description="Exactly 5 surgical, bulleted recommendations on how to apply findings for Spot Advertising.")
+    campaign_recommendations: List[str] = Field(default_factory=list, description="Exactly 5 high-level recommendations for long-form brand campaigns and narrative strategy.")
+
 # --- MASTER MODEL ---
 class MasterBrandDNA(BaseModel):
+    executive_summary: ExecutiveSummary = Field(default_factory=ExecutiveSummary)
     foundation: BrandFoundation = Field(default_factory=BrandFoundation)
     visual: VisualSystem = Field(default_factory=VisualSystem)
     voice: VoiceProfile = Field(default_factory=VoiceProfile)
