@@ -12,3 +12,4 @@ reportlab
 beautifulsoup4
 httpx
 playwright
+langchain-openai

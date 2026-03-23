@@ -2,6 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -27,10 +28,19 @@ class KYCChain:
     3. Strategic Sub-Agent (Reasoning LLM)
     """
     def __init__(self):
-        # Gemini 2.0 Flash for all reasoning passes
-        self.model = ChatGoogleGenerativeAI(
+        # 1. Vision Auditor (Gemini 2.0 Flash - Best for Multimodal Screenshots/Logos)
+        self.vision_model = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
             google_api_key=os.getenv("GOOGLE_API_KEY"),
+            temperature=0.0,
+            max_retries=3
+        )
+
+        # 2. Strategic Orchestrator (DeepSeek V3 via OpenRouter - Best for JSON Reasoning)
+        self.reasoning_model = ChatOpenAI(
+            model="deepseek/deepseek-chat",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            base_url="https://openrouter.ai/api/v1",
             temperature=0.0,
             max_retries=3
         )
@@ -61,8 +71,8 @@ class KYCChain:
         human_msg = HumanMessage(content=content_parts)
         
         try:
-            # Use structured output for the visual auditor
-            llm_with_structure = self.model.with_structured_output(VisualAuditResult)
+            # Use structured output for the visual auditor (Gemini)
+            llm_with_structure = self.vision_model.with_structured_output(VisualAuditResult)
             response = await llm_with_structure.ainvoke([system_msg, human_msg])
             return response.dict() if response else {}
         except Exception as e:
@@ -135,8 +145,8 @@ TASK: Produce the complete 9-section MasterBrandDNA JSON mirroring Enola's elite
 """
 
         try:
-            # Bind the schema for the final strategic pass
-            llm_with_structure = self.model.with_structured_output(MasterBrandDNA)
+            # Bind the schema for the final strategic pass (DeepSeek)
+            llm_with_structure = self.reasoning_model.with_structured_output(MasterBrandDNA)
             dna_result = await llm_with_structure.ainvoke([
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_context)
