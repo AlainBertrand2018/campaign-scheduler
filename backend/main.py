@@ -19,7 +19,6 @@ from logic.publisher_chain import PublisherChain
 from logic.statistician_chain import StatisticianChain
 from logic.accountant_chain import AccountantChain
 from logic.nanobanana_chain import BananaChain
-from utilities.html_deck_manager import generate_dna_deck_pdf
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -62,7 +61,7 @@ app.add_middleware(
 @app.post("/api/extract-dna")
 async def extract_dna_endpoint(request: Request):
     """
-    Standard REST endpoint for the frontend to access the KYC Manager and generate PDFs.
+    Standard REST endpoint for the frontend to access the KYC Manager.
     """
     # Protocol detection for Proxy (Render/Vercel)
     proto = request.headers.get("x-forwarded-proto", "http")
@@ -114,13 +113,6 @@ async def extract_dna_endpoint(request: Request):
             "message": "Unexpected backend failure during DNA extraction",
             "details": err_trace
         }, status_code=500)
-
-@app.get("/exports/{filename}")
-async def serve_exports(filename: str):
-    file_path = os.path.join(os.getcwd(), "exports", filename)
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    return JSONResponse({"status": "not_found"}, status_code=404)
 
 # -- SWARM TOOL ENDPOINTS --
 
@@ -217,9 +209,6 @@ async def tool_banana_forge(data: dict):
     return result.model_dump()
 
 # -- APP STARTUP --
-
-if not os.path.exists("exports"):
-    os.makedirs("exports")
 
 @app.get("/")
 async def root():
