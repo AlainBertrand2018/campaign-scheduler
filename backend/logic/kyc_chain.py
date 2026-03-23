@@ -36,9 +36,9 @@ class KYCChain:
             max_retries=3
         )
 
-        # 2. Strategic Orchestrator (DeepSeek V3 via OpenRouter - Best for JSON Reasoning)
+        # 2. Strategic Orchestrator (DeepSeek R1 via OpenRouter - The highest reasoning tier)
         self.reasoning_model = ChatOpenAI(
-            model="deepseek/deepseek-chat",
+            model="deepseek/deepseek-r1",
             api_key=os.getenv("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1",
             temperature=0.0,
