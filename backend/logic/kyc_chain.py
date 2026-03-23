@@ -134,8 +134,15 @@ NON-NEGOTIABLE MISSIONS:
 PLAYBOOK DIRECTIVES:
 {playbook_content}
 
-VISUAL AUDITOR FEEDBACK (INTEGRATE THIS):
+VISUAL AUDITOR FEEDBACK (PRIMARY VISUAL SIGNALS):
 {json.dumps(visual_audit, indent=2)}
+
+SECONDARY BROWSER SIGNALS (TECHNICAL SCRAPE):
+- Rendered Colors Found: {", ".join(scraping_result.get('colors', [])) if scraping_result.get('colors') else 'None detected'}
+- Rendered Fonts Found: {", ".join(scraping_result.get('fonts', [])) if scraping_result.get('fonts') else 'None detected'}
+- Page Title: {scraping_result.get('title', 'N/A')}
+- Meta Tags: 
+{scraping_result.get('meta_tags', 'N/A')}
 
 SCRAPED TEXT SIGNALS:
 {scraping_result.get('raw_text', 'No signals found.')[:10000]}
@@ -239,15 +246,27 @@ FORMATTING INSTRUCTIONS:
                         url = img.get("url")
                         b64 = img.get("base64")
                         if url and not url.startswith("data:"):
-                            dna_result.visual.extracted_app_images.append(url)
-                        elif b64 and len(b64) < 100000:
-                            dna_result.visual.extracted_app_images.append(b64)
+                            # Filter out tracking pixels / tiny icons
+                            if any(ext in url.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                                if url not in dna_result.visual.extracted_app_images:
+                                    dna_result.visual.extracted_app_images.append(url)
+                        elif b64 and 1000 < len(b64) < 500000: # Filter out too small/too large base64
+                            if b64 not in dna_result.visual.extracted_app_images:
+                                dna_result.visual.extracted_app_images.append(b64)
                 
                 # Safety: If fonts or colors were missing from the audit, use scraping results
                 if not dna_result.visual.extracted_app_fonts and "fonts" in scraping_result:
                     dna_result.visual.extracted_app_fonts = scraping_result["fonts"]
                 if not dna_result.visual.extracted_app_colors and "colors" in scraping_result:
                     dna_result.visual.extracted_app_colors = scraping_result["colors"]
+
+                # Ensure extracted_app_colors contains the best signals for the report
+                if scraping_result.get("colors"):
+                    # Prepend scraped colors to the list so the AI has access to them in the visual section
+                    current_extracts = set(dna_result.visual.extracted_app_colors)
+                    for c in scraping_result["colors"]:
+                        if c not in current_extracts:
+                            dna_result.visual.extracted_app_colors.insert(0, c)
 
                 return dna_result
             
