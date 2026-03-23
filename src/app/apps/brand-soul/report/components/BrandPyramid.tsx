@@ -83,9 +83,9 @@ export function BrandPyramid() {
       {/* Narrative Sidebars (Absolute Positioned for Visual Flair) */}
       <div style={{
         position: 'absolute',
-        left: '-180px',
+        left: '-120px',
         top: '20px',
-        width: '150px',
+        width: '100px',
         textAlign: 'right',
         opacity: 0.6
       }}>
@@ -95,9 +95,9 @@ export function BrandPyramid() {
 
       <div style={{
         position: 'absolute',
-        right: '-180px',
+        right: '-120px',
         bottom: '20px',
-        width: '150px',
+        width: '100px',
         textAlign: 'left',
         opacity: 0.6
       }}>

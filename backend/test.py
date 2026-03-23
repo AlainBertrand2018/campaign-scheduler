@@ -1,0 +1,1 @@
+import urllib.request, json; req = urllib.request.Request('http://127.0.0.1:8000/api/extract-dna', data=json.dumps({'brand_name': 'Test', 'website_url': 'https://google.com'}).encode('utf-8'), headers={'Content-Type': 'application/json'}); urllib.request.urlopen(req).read().decode()

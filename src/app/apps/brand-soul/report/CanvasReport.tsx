@@ -455,13 +455,10 @@ export default function CanvasReport() {
             <HubSpotSlide 
                 number="10" 
                 category="FINISH" 
-                title="Strategic Closure"
+                title="CONCLUSION"
                 dark
             >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
-                    <div style={{ width: '80px', height: '80px', background: HUB_THEME.colors.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '40px' }}>
-                        <div style={{ color: 'white', fontSize: '32px', fontWeight: 900 }}>E</div>
-                    </div>
                     <div style={{ ...HUB_THEME.typography.h1 as any, color: 'white', marginBottom: '24px' }}>Strategic <span style={{ color: HUB_THEME.colors.primary }}>Closure</span></div>
                     <p style={{ ...HUB_THEME.typography.body as any, color: 'rgba(255,255,255,0.7)', fontSize: '18px', lineHeight: 1.6, marginBottom: '48px' }}>
                         {getNested('executive_summary.brand_values_summary', 'This audit confirms that the brand is directionally sound and prepared for agentic orchestration.')}
