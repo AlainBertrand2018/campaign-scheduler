@@ -45,7 +45,7 @@ class KYCChain:
             api_key=os.getenv("OPENROUTER_API_KEY"),
             base_url="https://openrouter.ai/api/v1",
             temperature=0.0,
-            max_tokens=8000,
+            max_tokens=3500,
             model_kwargs={"response_format": {"type": "json_object"}},
             max_retries=3
         )
@@ -130,7 +130,8 @@ NON-NEGOTIABLE MISSIONS:
 5. BRAND STORY: Write a compelling 2-3 paragraph brand story based on the Manifesto and Problem Solved.
 6. TONE: Be direct, highly professional, and slightly intimidating in your competence. No filler. No "based on the data provided" disclaimers.
 7. EXECUTIVE SUMMARY: Complete the `executive_summary` section with a high-level synthesis of brand values and EXACTLY 5 bullet points for Spot Advertising and 5 for Campaign Strategy. This is the TL;DR for the Agency Director.
-8. IMAGE ASSET INTEGRITY: Do not provide placeholders for 'extracted_app_images'. Use the verified URLs from the Browser Signals.
+8. IMAGE ASSET INTEGRITY: Do not provide placeholders for 'extracted_app_images'. Use the verified URLs from the Browser Signals. You MUST include at least 1-3 URLs from the provided list if any are present.
+9. COLOR PRECISION: In 'primary_colors' and 'secondary_colors', you MUST use the EXACT HEX codes from the 'SECONDARY BROWSER SIGNALS'. Each ColorDefinition object MUST have the hex_code field populated with one of those values. 
 
 PLAYBOOK DIRECTIVES:
 {playbook_content}
@@ -175,6 +176,13 @@ FORMATTING INSTRUCTIONS:
             
             raw_text = response.content
             print("Received raw response from DeepSeek...")
+            
+            # Debug: Dump to file to monitor what the LLM actually generates
+            try:
+                with open("last_llm_response.log", "w", encoding="utf-8") as debug_file:
+                    debug_file.write(raw_text)
+            except Exception as e:
+                print(f"Failed to write debug log: {e}")
             
             # 1. Brutally rip out any <think>...</think> blocks common in DeepSeek V3 or R1 outputs
             raw_text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL)
@@ -236,6 +244,9 @@ FORMATTING INSTRUCTIONS:
             
             if dna_result:
                 # Integrity Check: Ensure name and visual assets are correctly mapped
+                if not dna_result.foundation:
+                    from models.kyc import BrandFoundation
+                    dna_result.foundation = BrandFoundation()
                 dna_result.foundation.brand_name = brand_name
                 
                 # Pre-populate the extracted_app_images with the User Logo first, then scraped images
@@ -262,13 +273,35 @@ FORMATTING INSTRUCTIONS:
                 if not dna_result.visual.extracted_app_colors and "colors" in scraping_result:
                     dna_result.visual.extracted_app_colors = scraping_result["colors"]
 
-                # Ensure extracted_app_colors contains the best signals for the report
-                if scraping_result.get("colors"):
-                    # Prepend scraped colors to the list so the AI has access to them in the visual section
-                    current_extracts = set(dna_result.visual.extracted_app_colors)
-                    for c in scraping_result["colors"]:
-                        if c not in current_extracts:
+                # Force scraped colors into the Pydantic model if they are missing or hallucinated
+                if "colors" in scraping_result and scraping_result["colors"]:
+                    scraped_colors = scraping_result["colors"]
+                    # 1. Fill extracted_app_colors (raw strings)
+                    for c in scraped_colors:
+                        if c not in dna_result.visual.extracted_app_colors:
                             dna_result.visual.extracted_app_colors.insert(0, c)
+                    
+                    # 2. If primary_colors objects are missing or Generic, force them
+                    if not dna_result.visual.primary_colors or len(dna_result.visual.primary_colors) < 2:
+                        from models.kyc import ColorDefinition
+                        for i, hex_val in enumerate(scraped_colors[:3]):
+                            # Ensure we extract just the HEX from "HEX (RGB)" format if scraper returns that
+                            clean_hex = hex_val.split(' ')[0] if ' ' in hex_val else hex_val
+                            if not clean_hex.startswith('#'): continue
+                            
+                            dna_result.visual.primary_colors.append(ColorDefinition(
+                                hex_code=clean_hex,
+                                psychology="Technical Signal: Extracted from Website CSS.",
+                                color_critical_analysis="Direct browser signal anchor."
+                            ))
+
+                # Force scraped fonts if missing
+                if "fonts" in scraping_result and scraping_result["fonts"]:
+                    for f in scraping_result["fonts"]:
+                        if f not in dna_result.visual.extracted_app_fonts:
+                            dna_result.visual.extracted_app_fonts.append(f)
+                    if not dna_result.visual.primary_typography or dna_result.visual.primary_typography == "Sans-serif":
+                        dna_result.visual.primary_typography = scraping_result["fonts"][0]
 
                 return dna_result
             

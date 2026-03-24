@@ -2,7 +2,6 @@ import asyncio
 import os
 import sys
 
-# Ensure this script runs with the backend directory in the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from logic.kyc_chain import KYCChain
@@ -10,18 +9,19 @@ from logic.kyc_chain import KYCChain
 async def test():
     try:
         kyc = KYCChain()
-        # Mocking input data as it would be from the frontend
         input_data = {"url": "https://16-travel.vercel.app/"}
         print("Starting KYC extraction...")
         res = await kyc.extract_brand_dna(input_data)
         if res:
-            print("Extraction successful. Brand name:", res.foundation.brand_name)
+            print("Extraction successful!")
+            print("IMAGES:", res.visual.extracted_app_images)
+            print("COLORS:", res.visual.extracted_app_colors)
+            print("FONTS:", res.visual.extracted_app_fonts)
+            print("IN DEPTH ANALYSIS:", res.foundation.strategic_dive.in_depth_analysis)
         else:
             print("Extraction returned None")
     except Exception as e:
-        import traceback
         print(f"Extraction failed: {e}")
-        traceback.print_exc()
 
 if __name__ == "__main__":
     if sys.platform == "win32":

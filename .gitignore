@@ -76,3 +76,6 @@ ENV/
 *.webp
 *.png
 !public/*.png
+
+# Local debug logs
+backend/last_llm_response.log

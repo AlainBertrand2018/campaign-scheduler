@@ -256,6 +256,38 @@ export default function CanvasReport() {
                 </div>
             </HubSpotSlide>
 
+            <HubSpotSlide 
+                number="04A" 
+                category="AUDIT" 
+                title="Extracted Visual Assets"
+                dark
+            >
+                <div style={{...HUB_THEME.typography.h2 as any, marginBottom: '20px', color: 'white' }}>
+                    Captured <span style={{ color: HUB_THEME.colors.primary }}>Brand</span> Assets
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginTop: '10px' }}>
+                    {(data.visual?.extracted_app_images || []).slice(0, 6).map((img: string, i: number) => (
+                        <div key={i} style={{ 
+                            height: '140px', 
+                            backgroundImage: `url(${img})`,
+                            backgroundPosition: 'center',
+                            backgroundSize: 'cover',
+                            backgroundRepeat: 'no-repeat',
+                            borderRadius: HUB_THEME.radius.card,
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            backgroundColor: 'rgba(255,255,255,0.02)'
+                        }} />
+                    ))}
+                </div>
+                
+                <div style={{ marginTop: '30px' }}>
+                    <HubSpotContentBlock title="Asset Integrity" label="DATA QUALITY" dark>
+                        Live brand assets captured during extraction process. These represent the ground truth for creative generation and ad-template alignment.
+                    </HubSpotContentBlock>
+                </div>
+            </HubSpotSlide>
+
             {/* 04: VERBAL TONE ALIGNMENT */}
             <HubSpotSlide 
                 number="04" 
@@ -459,36 +491,12 @@ export default function CanvasReport() {
                 dark
             >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', maxWidth: '800px', margin: '0 auto' }}>
-                    <div style={{ ...HUB_THEME.typography.h1 as any, color: 'white', marginBottom: '24px' }}>Strategic <span style={{ color: HUB_THEME.colors.primary }}>Closure</span></div>
-                    <p style={{ ...HUB_THEME.typography.body as any, color: 'rgba(255,255,255,0.7)', fontSize: '18px', lineHeight: 1.6, marginBottom: '48px' }}>
+                    <div style={{ ...HUB_THEME.typography.h1 as any, color: 'white', marginBottom: '24px' }}>Strategic <span style={{ color: HUB_THEME.colors.primary }}>Enola Conclusion</span></div>
+                    <p style={{ ...HUB_THEME.typography.body as any, color: 'rgba(255,255,255,0.7)', fontSize: '18px', lineHeight: 1.6, marginBottom: '24px' }}>
                         {getNested('executive_summary.brand_values_summary', 'This audit confirms that the brand is directionally sound and prepared for agentic orchestration.')}
                     </p>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', textAlign: 'left', width: '100%' }}>
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                            <div style={{...HUB_THEME.typography.label as any, color: HUB_THEME.colors.primary, marginBottom: '16px' }}>SPOT AD RECOMMENDATIONS</div>
-                            <ul className="space-y-3">
-                                {(data.executive_summary?.spot_advertising_recommendations || ['Precision messaging', 'High-intent signals']).map((rec: string, i: number) => (
-                                    <li key={i} style={{ color: 'white', fontSize: '13px', display: 'flex', gap: '10px' }}>
-                                        <span style={{ color: HUB_THEME.colors.primary }}>•</span> {rec}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                        <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
-                            <div style={{...HUB_THEME.typography.label as any, color: HUB_THEME.colors.primary, marginBottom: '16px' }}>CAMPAIGN GUIDANCE</div>
-                            <ul className="space-y-3">
-                                {(data.executive_summary?.campaign_recommendations || ['Optimize for ROI', 'Narrative integrity']).map((rec: string, i: number) => (
-                                    <li key={i} style={{ color: 'white', fontSize: '13px', display: 'flex', gap: '10px' }}>
-                                        <span style={{ color: HUB_THEME.colors.primary }}>•</span> {rec}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
                 </div>
             </HubSpotSlide>
-
           </div>
        </div>
     </div>

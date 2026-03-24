@@ -91,24 +91,23 @@ async def deep_scan_url(url: str, max_images: int = 3) -> dict:
                 for(let i=0; i < allElements.length; i+=5) {
                     const style = window.getComputedStyle(allElements[i]);
                     // Color / Background Color
-                    if(style.color && style.color !== 'rgba(0, 0, 0, 0)') {
-                        colors.add(`${rgbToHex(style.color)} (${style.color})`);
+                    if(style.color && !style.color.includes('rgba(0, 0, 0, 0)')) {
+                        colors.add(rgbToHex(style.color));
                     }
-                    if(style.backgroundColor && style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                        colors.add(`${rgbToHex(style.backgroundColor)} (${style.backgroundColor})`);
+                    if(style.backgroundColor && !style.backgroundColor.includes('rgba(0, 0, 0, 0)') && style.backgroundColor !== 'transparent') {
+                        colors.add(rgbToHex(style.backgroundColor));
                     }
                     
                     // Fonts
                     if(style.fontFamily) {
-                        // Extract base primary font name
                         let primary = style.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
-                        if(primary) fonts.add(primary);
+                        if(primary && !['inherit', 'serif', 'sans-serif'].includes(primary.toLowerCase())) fonts.add(primary);
                     }
                 }
                 
                 return {
-                    colors: Array.from(colors).slice(0, 10),
-                    fonts: Array.from(fonts).slice(0, 5)
+                    colors: Array.from(colors).filter(c => c !== '#00000000').slice(0, 15),
+                    fonts: Array.from(fonts).slice(0, 8)
                 };
             }''')
             
@@ -129,13 +128,16 @@ async def deep_scan_url(url: str, max_images: int = 3) -> dict:
                 });
                 
                 // 2. background images from div, section, header
-                const elements = document.querySelectorAll('div, section, header, figure, span');
+                const elements = document.querySelectorAll('*');
                 elements.forEach(el => {
                     const bg = window.getComputedStyle(el).backgroundImage;
                     if (bg && bg !== 'none' && bg.includes('url(')) {
-                        const match = bg.match(/url\\(["']?(.*?)["']?\\)/);
-                        if (match && match[1] && match[1].startsWith('http') && !match[1].includes('data:image')) {
-                            validUrls.add(match[1]);
+                        const match = bg.match(/url\(["']?(.*?)["']?\)/);
+                        if (match && match[1]) {
+                            try {
+                                const fullUrl = new URL(match[1], window.location.href).href;
+                                if (fullUrl.startsWith('http')) validUrls.add(fullUrl);
+                            } catch(e) {}
                         }
                     }
                 });
@@ -153,7 +155,7 @@ async def deep_scan_url(url: str, max_images: int = 3) -> dict:
                     }
                 });
                 
-                return Array.from(validUrls).filter(url => !url.endsWith('.svg')).slice(0, maxImgs);
+                return Array.from(validUrls).filter(url => !url.includes('data:image')).slice(0, maxImgs);
             }''', max_images)
 
             # Capture Hero Screenshot (for Multimodal AI analysis of layout/vibe)
